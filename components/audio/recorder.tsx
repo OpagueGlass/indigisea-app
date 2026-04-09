@@ -40,6 +40,7 @@ export function Recorder({
   const [selectedWordIndex, setSelectedWordIndex] = useState<number | null>(null)
   const [currentWordStartMs, setCurrentWordStartMs] = useState<number | null>(null)
   const [recordedWord, setRecordedWord] = useState<string>("")
+  const [wordEndMarked, setWordEndMarked] = useState(false)
 
   // Set to default state when recording stops or is cancelled
   const resetRecordingState = () => {
@@ -134,13 +135,22 @@ export function Recorder({
     // End the current word if one is active before selecting a new word to mark.
     if (currentWordStartMs !== null && selectedWordIndex !== null) {
       markEnd()
-    }
-    setSelectedWordIndex(index)
-    setCurrentWordStartMs(null)
+      if (recordedWord.trim() !== "") {
+        setSelectedWordIndex(index)
+        setCurrentWordStartMs(null)
+        setRecordedWord("")
+        setWordEndMarked(false)
+      }
+    } else {
+      setSelectedWordIndex(index)
+      setCurrentWordStartMs(null)
+      setRecordedWord("")
+      setWordEndMarked(false)
 
-    if (timestamps.has(index)) {
-      const timestamp = timestamps.get(index)!
-      setRecordedWord(timestamp.recordedWord)
+      if (timestamps.has(index)) {
+        const timestamp = timestamps.get(index)!
+        setRecordedWord(timestamp.recordedWord)
+      }
     }
   }
 
@@ -184,7 +194,7 @@ export function Recorder({
       return next
     })
     setCurrentWordStartMs(null)
-    setRecordedWord("")
+    setWordEndMarked(true)
   }
 
   useEffect(() => {
@@ -235,6 +245,7 @@ export function Recorder({
               placeholder="Enter translation..."
               value={recordedWord}
               onChange={(e) => setRecordedWord(e.target.value)}
+              disabled={wordEndMarked}
             />
           </div>
 
