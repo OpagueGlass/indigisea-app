@@ -92,7 +92,15 @@ export function Player({
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div>
-                      <CardTitle className="text-base">{new Date(recording.createdAt).toLocaleString()}</CardTitle>
+                      <CardTitle className="text-base">
+                        {new Date(recording.createdAt).toLocaleString([], {
+                          year: "numeric",
+                          month: "numeric",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </CardTitle>
                       <CardDescription>
                         {formatDuration(recording.durationMs)} • {formatBytes(recording.size)} •{" "}
                         {recording.timestamps.length} words marked
