@@ -7,6 +7,13 @@ export interface Collection {
   createdAt: Date
 }
 
+export interface Timestamp {
+  word: string
+  startMs: number
+  endMs: number
+  recordedWord: string
+}
+
 export interface Recording {
   id: string
   collectionId: string
@@ -15,8 +22,9 @@ export interface Recording {
   size: number
   mimeType: string
   blob: Blob
-  timestamps: { word: string; startMs: number; endMs: number }[]
+  timestamps: { word: string; startMs: number; endMs: number, recordedWord: string }[]
 }
+
 
 interface DB extends DBSchema {
   collections: {
@@ -34,7 +42,7 @@ interface DB extends DBSchema {
 const DB_NAME = "recorder-db"
 
 function openRecorderDb() {
-  return openDB<DB>(DB_NAME, 1, {
+  return openDB<DB>(DB_NAME, 2, {
     upgrade(db) {
       if (!db.objectStoreNames.contains("collections")) {
         const collStore = db.createObjectStore("collections", { keyPath: "id" })

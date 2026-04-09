@@ -1,20 +1,16 @@
 "use client"
 
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
-import { Collection, addRecording } from "@/lib/db"
+import { Collection, addRecording, Timestamp } from "@/lib/db"
 import { formatDuration } from "@/lib/utils"
-import { Check, Mic, Square } from "lucide-react"
+import { Check, Mic, Play, Square } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
-
-type LiveTimestamp = {
-  word: string
-  startMs: number
-  endMs: number | null
-}
+import { Input } from "../ui/input"
+import { Label } from "../ui/label"
+import WordModal from "./word-modal"
 
 const preferredTypes = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4"]
 
@@ -35,20 +31,22 @@ export function Recorder({
 }) {
   const chunksRef = useRef<BlobPart[]>([])
   const recordingStartRef = useRef<number>(0)
-  const timestampsRef = useRef<LiveTimestamp[]>([])
+  const timestampsRef = useRef<Map<number, Timestamp>>(new Map())
 
   const [isRecording, setIsRecording] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [activeDurationMs, setActiveDurationMs] = useState(0)
-  const [currentWordIndex, setCurrentWordIndex] = useState(-1)
-  const [timestamps, setTimestamps] = useState<LiveTimestamp[]>([])
+  const [timestamps, setTimestamps] = useState<Map<number, Timestamp>>(new Map())
+  const [selectedWordIndex, setSelectedWordIndex] = useState<number | null>(null)
+  const [currentWordStartMs, setCurrentWordStartMs] = useState<number | null>(null)
+  const [recordedWord, setRecordedWord] = useState<string>("")
 
   // Set to default state when recording stops or is cancelled
   const resetRecordingState = () => {
     chunksRef.current = []
-    timestampsRef.current = []
-    setCurrentWordIndex(-1)
-    setTimestamps([])
+    timestampsRef.current = new Map()
+    setSelectedWordIndex(null)
+    setTimestamps(new Map())
   }
 
   const saveRecording = async () => {
@@ -63,11 +61,9 @@ export function Recorder({
         throw new Error("Recording was empty. Please try again.")
       }
 
-      const finalizedTimestamps = timestampsRef.current.map((ts, index, arr) => ({
-        word: ts.word,
-        startMs: ts.startMs,
-        endMs: index === arr.length - 1 ? durationMs : (ts.endMs ?? arr[index + 1]?.startMs ?? durationMs),
-      }))
+      const timestampsArray = Array.from(timestampsRef.current.entries())
+        .sort((a, b) => a[0] - b[0])
+        .map(([_, timestamp]) => timestamp)
 
       const newRecording = {
         id: crypto.randomUUID(),
@@ -77,18 +73,16 @@ export function Recorder({
         size: blob.size,
         mimeType: blob.type,
         blob,
-        timestamps: finalizedTimestamps,
+        timestamps: timestampsArray,
       }
 
       await addRecording(newRecording)
       await loadRecordings()
     } catch (error) {
       toast.error("Could not save this recording: " + (error as Error).message)
-    } finally {
-      cleanupStream()
-      resetRecordingState()
-      setIsSaving(false)
     }
+    setIsSaving(false)
+    cleanupStream()
   }
 
   const startRecording = async () => {
@@ -130,48 +124,67 @@ export function Recorder({
   const stopRecording = () => {
     const mediaRecorder = mediaRecorderRef.current
     if (!mediaRecorder || mediaRecorder.state !== "recording") return
-
     setIsRecording(false)
     mediaRecorder.stop()
   }
 
-  // TODO: read from here
-  const markWord = () => {
-    if (!isRecording || collection.words.length === 0) return
+  const selectWord = (index: number) => {
+    if (!isRecording) return
 
-    const nowMs = Date.now() - recordingStartRef.current
+    // End the current word if one is active before selecting a new word to mark.
+    if (currentWordStartMs !== null && selectedWordIndex !== null) {
+      markEnd()
+    }
+    setSelectedWordIndex(index)
+    setCurrentWordStartMs(null)
 
-    if (currentWordIndex === -1) {
-      // First press starts word 1.
-      const firstWord = collection.words[0]
-      const next = [{ word: firstWord, startMs: nowMs, endMs: null }]
-      timestampsRef.current = next
-      setTimestamps(next)
-      setCurrentWordIndex(0)
+    if (timestamps.has(index)) {
+      const timestamp = timestamps.get(index)!
+      setRecordedWord(timestamp.recordedWord)
+    }
+  }
+
+  const markStart = () => {
+    if (!isRecording || selectedWordIndex === null) return
+    const startMs = Date.now() - recordingStartRef.current
+    setCurrentWordStartMs(startMs)
+
+    // If this word was already marked, unmark it and reset the timestamp for this word.
+    if (timestamps.has(selectedWordIndex)) {
+      setTimestamps((prev) => {
+        const next = new Map(prev)
+        next.delete(selectedWordIndex)
+        timestampsRef.current = next
+        return next
+      })
+    }
+  }
+
+  const markEnd = () => {
+    if (!isRecording || selectedWordIndex === null || currentWordStartMs === null) return
+
+    if (recordedWord.trim() === "") {
+      toast.error("Please enter the word before marking the end time.")
       return
     }
 
-    if (currentWordIndex >= collection.words.length - 1) return
+    const endMs = Date.now() - recordingStartRef.current
+    const word = collection.words[selectedWordIndex]
 
-    const nextWordIndex = currentWordIndex + 1
-    const nextWord = collection.words[nextWordIndex]
-
+    const timestamp = {
+      word,
+      startMs: currentWordStartMs,
+      endMs,
+      recordedWord: recordedWord.trim(),
+    }
     setTimestamps((prev) => {
-      const next = [...prev]
-
-      if (next.length > 0 && next[next.length - 1].endMs === null) {
-        next[next.length - 1] = {
-          ...next[next.length - 1],
-          endMs: nowMs,
-        }
-      }
-
-      next.push({ word: nextWord, startMs: nowMs, endMs: null })
+      const next = new Map(prev)
+      next.set(selectedWordIndex, timestamp)
       timestampsRef.current = next
       return next
     })
-
-    setCurrentWordIndex(nextWordIndex)
+    setCurrentWordStartMs(null)
+    setRecordedWord("")
   }
 
   useEffect(() => {
@@ -189,8 +202,93 @@ export function Recorder({
     }
   }, [isRecording])
 
-  const startedWordsCount = currentWordIndex < 0 ? 0 : currentWordIndex + 1
-  const progress = isRecording && collection.words.length > 0 ? (startedWordsCount / collection.words.length) * 100 : 0
+  const markedCount = timestamps.size
+  const progress = isRecording ? (markedCount / collection.words.length) * 100 : 0
+
+  const recording = (
+    <>
+      {/* Progress */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-muted-foreground">Progress</span>
+          <span className="font-medium">
+            {markedCount} / {collection.words.length} words marked
+          </span>
+        </div>
+        <Progress value={progress} />
+      </div>
+
+      {/* Current Word Controls */}
+      {selectedWordIndex !== null && (
+        <div className="space-y-4 rounded-lg border bg-muted/50 p-6">
+          <div className="text-center">
+            <p className="mb-2 text-sm text-muted-foreground">Selected Word</p>
+            <p className="text-3xl font-bold text-foreground">{collection.words[selectedWordIndex]}</p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="translation" className="text-sm">
+              Translation
+            </Label>
+            <Input
+              id="translation"
+              placeholder="Enter translation..."
+              value={recordedWord}
+              onChange={(e) => setRecordedWord(e.target.value)}
+            />
+          </div>
+
+          <div className="flex flex-wrap justify-center gap-3">
+            {currentWordStartMs === null ? (
+              <Button size="lg" onClick={markStart} className="min-w-[160px] gap-2">
+                <Play className="size-5" />
+                Mark Start
+              </Button>
+            ) : (
+              <>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  Started at {formatDuration(currentWordStartMs)}
+                </div>
+                <Button size="lg" onClick={markEnd} className="min-w-[160px] gap-2">
+                  <Square className="size-5" />
+                  Mark End
+                </Button>
+              </>
+            )}
+          </div>
+
+          {timestamps.has(selectedWordIndex) && (
+            <div className="flex items-center justify-center gap-2 text-center text-sm text-primary">
+              <Check className="size-4" />
+              Recorded: {formatDuration(timestamps.get(selectedWordIndex)!.startMs)} -{" "}
+              {formatDuration(timestamps.get(selectedWordIndex)!.endMs)}
+            </div>
+          )}
+        </div>
+      )}
+
+      {selectedWordIndex === null ? (
+        <div className="space-y-4 rounded-lg border border-dashed bg-muted/30 p-6 text-center">
+          <p className="text-muted-foreground">Select a word to start marking</p>
+          <WordModal
+            collection={collection}
+            timestamps={timestamps}
+            selectedWordIndex={selectedWordIndex}
+            selectWord={selectWord}
+          />
+        </div>
+      ) : (
+        <div className="flex justify-center">
+          <WordModal
+            collection={collection}
+            timestamps={timestamps}
+            selectedWordIndex={selectedWordIndex}
+            selectWord={selectWord}
+          />
+        </div>
+      )}
+    </>
+  )
 
   return (
     <Card>
@@ -200,52 +298,12 @@ export function Recorder({
           Record Words
         </CardTitle>
         <CardDescription>
-          Start recording, then click the button each time you say a word to mark its timestamp.
+          Start recording, pick a word from the list, then mark the start and end of each pronunciation.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {isRecording && (
-          <>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Progress</span>
-                <span className="font-medium">
-                  {startedWordsCount} / {collection.words.length} words started
-                </span>
-              </div>
-              <Progress value={progress} />
-            </div>
-
-            <div className="rounded-lg border bg-muted/50 p-6 text-center">
-              <p className="mb-2 text-sm text-muted-foreground">Current Word</p>
-              {currentWordIndex === -1 && collection.words.length > 0 ? (
-                <>
-                  <p className="text-base font-medium text-muted-foreground">
-                    Press Mark Word to start the first word.
-                  </p>
-                  <p className="mt-2 text-sm text-muted-foreground">First: {collection.words[0]}</p>
-                </>
-              ) : currentWordIndex >= 0 && currentWordIndex < collection.words.length ? (
-                <p className="text-3xl font-bold text-foreground">{collection.words[currentWordIndex]}</p>
-              ) : (
-                <p className="flex items-center justify-center gap-2 text-xl font-medium text-primary">
-                  <Check className="size-5" />
-                  All words marked!
-                </p>
-              )}
-              {currentWordIndex >= 0 && currentWordIndex < collection.words.length - 1 && (
-                <p className="mt-2 text-sm text-muted-foreground">Next: {collection.words[currentWordIndex + 1]}</p>
-              )}
-            </div>
-
-            <div className="flex items-center justify-center gap-2 font-mono text-lg">
-              <span className="inline-flex size-3 animate-pulse rounded-full bg-destructive" />
-              {formatDuration(activeDurationMs)}
-            </div>
-          </>
-        )}
-
-        <div className="flex flex-wrap justify-center gap-3">
+        {/* Start/Stop Recording */}
+        <div className="flex flex-wrap items-center gap-3">
           {!isRecording ? (
             <Button size="lg" onClick={startRecording} disabled={!isSupported || isSaving} className="gap-2">
               <Mic className="size-5" />
@@ -253,44 +311,19 @@ export function Recorder({
             </Button>
           ) : (
             <>
-              <Button
-                size="lg"
-                onClick={markWord}
-                disabled={
-                  collection.words.length === 0 ||
-                  (currentWordIndex >= collection.words.length - 1 && currentWordIndex !== -1)
-                }
-                className="min-w-[200px] gap-2"
-              >
-                <Check className="size-5" />
-                {currentWordIndex === -1
-                  ? `Start Word (1/${collection.words.length})`
-                  : `Next Word (${Math.min(currentWordIndex + 2, collection.words.length)}/${collection.words.length})`}
-              </Button>
+              <div className="flex items-center gap-2 font-mono text-lg">
+                <span className="inline-flex size-3 animate-pulse rounded-full bg-destructive" />
+                {formatDuration(activeDurationMs)}
+              </div>
               <Button size="lg" variant="destructive" onClick={stopRecording} className="gap-2">
                 <Square className="size-5" />
-                Stop Recording
+                Stop & Save
               </Button>
             </>
           )}
         </div>
 
-        {isRecording && timestamps.length > 0 && (
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-muted-foreground">Marked Words</p>
-            <div className="flex flex-wrap gap-2">
-              {timestamps.map((wt, i) => (
-                <Badge key={i} variant="secondary" className="gap-1">
-                  {wt.word}
-                  <span className="text-xs text-muted-foreground">
-                    @{formatDuration(wt.startMs)}
-                    {wt.endMs !== null ? ` - ${formatDuration(wt.endMs)}` : ""}
-                  </span>
-                </Badge>
-              ))}
-            </div>
-          </div>
-        )}
+        {isRecording && recording}
       </CardContent>
     </Card>
   )
