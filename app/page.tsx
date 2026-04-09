@@ -3,7 +3,7 @@
 import { FolderOpen, Mic, Plus, Trash2, Upload } from "lucide-react"
 import { useEffect, useState } from "react"
 
-import { CollectionRecorder } from "@/components/collection-recorder"
+import { CollectionRecorder } from "@/components/audio/collection-recorder"
 import {
   AlertDialog,
   AlertDialogContent,
