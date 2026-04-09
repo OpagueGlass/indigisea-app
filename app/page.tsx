@@ -6,6 +6,8 @@ import { useEffect, useState } from "react"
 import { CollectionRecorder } from "@/components/audio/collection-recorder"
 import {
   AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
@@ -121,7 +123,7 @@ export default function Page() {
         }}
       >
         <DialogTrigger asChild>
-          <Button className="w-fit gap-2">
+          <Button size="lg" className="w-full md:w-fit gap-2 h-10 p-4">
             <Plus className="size-4" />
             Create Collection
           </Button>
@@ -202,12 +204,11 @@ export default function Page() {
                     {collection.words.length > 3 && "..."}
                   </p>
                   <div className="flex gap-2">
-                    <Button size="sm" className="flex-1 gap-2" onClick={() => setSelectedCollection(collection)}>
+                    <Button className="flex-1 gap-2" onClick={() => setSelectedCollection(collection)}>
                       <Mic className="size-4" />
                       Open & Record
                     </Button>
                     <Button
-                      size="sm"
                       variant="outline"
                       className="text-destructive hover:bg-destructive hover:text-white"
                       onClick={() => {
@@ -233,20 +234,18 @@ export default function Page() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
               onClick={() => {
                 if (collectionToDelete) {
                   deleteCollection(collectionToDelete.id)
                 }
                 setShowDeleteDialog(false)
               }}
+              variant="destructive"
             >
               Delete
-            </Button>
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
