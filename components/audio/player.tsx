@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Collection, Recording, removeRecording } from "@/lib/db"
+import { Collection, Recording, removeRecording, updateCollection } from "@/lib/db"
 import { extensionFor, formatBytes, formatDuration } from "@/lib/utils"
 import { Download, FileJson, Mic, MoreVertical, Play, Trash2 } from "lucide-react"
 import { useEffect, useState } from "react"
@@ -20,21 +20,16 @@ import {
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu"
 import PlaybackModal from "./playback-modal"
 
-interface RecordingMetadata {
-  createdAt: string
-  durationMs: number
-  size: number
-  timestamps: { word: string; startMs: number; endMs: number }[]
-}
-
 export function Player({
   recordings,
   collection,
   loadRecordings,
+  loadCollections,
 }: {
   recordings: Recording[]
   collection: Collection
   loadRecordings: () => Promise<void>
+  loadCollections: () => Promise<void>
 }) {
   const [recordingUrls, setRecordingUrls] = useState<Record<string, string>>({})
   const [metadata, setMetadata] = useState<Record<string, string>>({})
@@ -68,7 +63,32 @@ export function Player({
 
   const deleteRecording = async (id: string) => {
     try {
+      const newWordRecorded = new Array(collection.wordIds.length).fill(false)
+      const idMap = new Map<string, number>()
+      collection.wordIds.forEach((id, index) => {
+        idMap.set(id, index)
+      })
+
       await removeRecording(id)
+
+      const remainingRecordings = recordings.filter((r) => r.id !== id)
+      for (const recording of remainingRecordings) {
+        for (const timestamp of recording.timestamps) {
+          const wordIndex = idMap.get(timestamp.wordId)
+          if (wordIndex !== undefined) {
+            newWordRecorded[wordIndex] = true
+          }
+        }
+      }
+      console.log(newWordRecorded)
+
+      const newCollection = {
+        ...collection,
+        wordRecorded: newWordRecorded,
+      }
+
+      await updateCollection(newCollection)
+      await loadCollections()
       await loadRecordings()
       if (selectedRecording?.id === id) {
         setSelectedRecording(null)
@@ -102,10 +122,13 @@ export function Player({
             const filename = `${collection.name.toLowerCase()}-${recording.createdAt.toISOString()}`
 
             return (
-              <Card key={recording.id} >
+              <Card key={recording.id}>
                 <CardHeader>
                   <div className="flex items-center justify-between">
-                    <button onClick={() => openPlaybackModal(recording)} className="text-left hover:opacity-80 transition-opacity">
+                    <button
+                      onClick={() => openPlaybackModal(recording)}
+                      className="text-left transition-opacity hover:opacity-80"
+                    >
                       <CardTitle className="text-base">
                         {new Date(recording.createdAt).toLocaleString([], {
                           hour: "2-digit",
@@ -117,7 +140,7 @@ export function Player({
                       </CardTitle>
                       <CardDescription>
                         {formatDuration(recording.durationMs)} - {formatBytes(recording.size)} -{" "}
-                        {recording.timestamps.length} words marked
+                        {new Set(recording.timestamps.map((t) => t.wordId)).size} words marked
                       </CardDescription>
                     </button>
                     <DropdownMenu>

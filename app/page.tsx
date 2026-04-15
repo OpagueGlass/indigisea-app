@@ -28,7 +28,7 @@ import {
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { addCollection, Collection, getCollections, removeCollection } from "@/lib/db"
-import { parseCSVFile } from "@/lib/parse-csv"
+import { parseCSVFile, Word } from "@/lib/parse-csv"
 import { toast } from "sonner"
 
 export default function Page() {
@@ -36,7 +36,7 @@ export default function Page() {
   const [selectedCollection, setSelectedCollection] = useState<Collection | null>(null)
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [newCollectionName, setNewCollectionName] = useState("")
-  const [words, setWords] = useState<string[]>([])
+  const [words, setWords] = useState<Word[]>([])
   const [loading, setLoading] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [collectionToDelete, setCollectionToDelete] = useState<Collection | null>(null)
@@ -52,6 +52,10 @@ export default function Page() {
     try {
       const collections = await getCollections()
       setCollections(collections)
+      if (selectedCollection) {
+        const updatedSelected = collections.find((c) => c.id === selectedCollection.id) || null
+        setSelectedCollection(updatedSelected)
+      }
     } catch (error) {
       toast.error("Could not load collections: " + (error as Error).message)
     }
@@ -71,7 +75,9 @@ export default function Page() {
       const newCollection = {
         id: crypto.randomUUID(),
         name: newCollectionName.trim(),
-        words: words,
+        wordIds: words.map((word) => word.id),
+        words: words.map((word) => word.word),
+        wordRecorded: words.map((_) => false),
         createdAt: new Date(),
       }
 
@@ -96,13 +102,25 @@ export default function Page() {
     }
   }
 
+  const formatPreview = (words: Word[]) => {
+    const previewWords = words.slice(0, 3).map((word) => word.word)
+    const previewSentences = previewWords.map((sentence) => {
+      const sentenceWords = sentence.split(" ")
+      if (sentenceWords.length > 3) {
+        return sentenceWords.slice(0, 3).join(" ") + "..."
+      }
+      return sentence
+    })
+    return `${words.length} words loaded: ` + previewSentences.join(", ") + (words.length > 3 ? ", ..." : "")
+  }
+
   useEffect(() => {
     setLoading(true)
     loadCollections()
   }, [])
 
   if (selectedCollection) {
-    return <CollectionRecorder collection={selectedCollection} onBack={() => setSelectedCollection(null)} />
+    return <CollectionRecorder collection={selectedCollection} loadCollections={loadCollections} onBack={() => setSelectedCollection(null)} />
   }
 
   return (
@@ -123,7 +141,7 @@ export default function Page() {
         }}
       >
         <DialogTrigger asChild>
-          <Button size="lg" className="w-full md:w-fit gap-2 h-10 p-4">
+          <Button size="lg" className="h-10 w-full gap-2 p-4 md:w-fit">
             <Plus className="size-4" />
             Create Collection
           </Button>
@@ -153,14 +171,7 @@ export default function Page() {
                 className="cursor-pointer"
               />
               <FieldDescription>
-                {words.length > 0 ? (
-                  <>
-                    {words.length} words loaded: {words.slice(0, 3).join(", ")}
-                    {words.length > 3 && "..."}
-                  </>
-                ) : (
-                  "Select a CSV word list to upload"
-                )}
+                {words.length > 0 ? formatPreview(words) : "Select a CSV word list to upload"}
               </FieldDescription>
             </Field>
           </FieldGroup>

@@ -11,10 +11,11 @@ import { Player } from "./player"
 
 interface CollectionRecorderProps {
   collection: Collection
+  loadCollections: () => Promise<void>
   onBack: () => void
 }
 
-export function CollectionRecorder({ collection, onBack }: CollectionRecorderProps) {
+export function CollectionRecorder({ collection, loadCollections, onBack }: CollectionRecorderProps) {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
 
@@ -82,7 +83,7 @@ export function CollectionRecorder({ collection, onBack }: CollectionRecorderPro
         />
 
         {/* Saved Recordings */}
-        <Player recordings={recordings} collection={collection} loadRecordings={loadRecordings} />
+        <Player recordings={recordings} collection={collection} loadRecordings={loadRecordings} loadCollections={loadCollections} />
       </div>
     </main>
   )

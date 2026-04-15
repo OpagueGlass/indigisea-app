@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
-import { Collection, addRecording, Timestamp } from "@/lib/db"
+import { Collection, addRecording, Timestamp, updateCollection } from "@/lib/db"
 import { formatDuration } from "@/lib/utils"
 import { Check, Mic, Play, Square } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
@@ -31,12 +31,12 @@ export function Recorder({
 }) {
   const chunksRef = useRef<BlobPart[]>([])
   const recordingStartRef = useRef<number>(0)
-  const timestampsRef = useRef<Map<number, Timestamp>>(new Map())
+  const timestampsRef = useRef<Map<number, Timestamp[]>>(new Map())
 
   const [isRecording, setIsRecording] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [activeDurationMs, setActiveDurationMs] = useState(0)
-  const [timestamps, setTimestamps] = useState<Map<number, Timestamp>>(new Map())
+  const [timestamps, setTimestamps] = useState<Map<number, Timestamp[]>>(new Map())
   const [selectedWordIndex, setSelectedWordIndex] = useState<number | null>(null)
   const [currentWordStartMs, setCurrentWordStartMs] = useState<number | null>(null)
   const [recordedWord, setRecordedWord] = useState<string>("")
@@ -65,6 +65,12 @@ export function Recorder({
       const timestampsArray = Array.from(timestampsRef.current.entries())
         .sort((a, b) => a[0] - b[0])
         .map(([_, timestamp]) => timestamp)
+        .flat()
+
+      const recordedWords = collection.wordRecorded
+      for (const index of timestampsRef.current.keys()) {
+        recordedWords[index] = true
+      }
 
       const newRecording = {
         id: crypto.randomUUID(),
@@ -77,7 +83,13 @@ export function Recorder({
         timestamps: timestampsArray,
       }
 
+      const newCollection = {
+        ...collection,
+        wordRecorded: recordedWords,
+      }
+
       await addRecording(newRecording)
+      await updateCollection(newCollection)
       await loadRecordings()
     } catch (error) {
       toast.error("Could not save this recording: " + (error as Error).message)
@@ -149,7 +161,7 @@ export function Recorder({
 
       if (timestamps.has(index)) {
         const timestamp = timestamps.get(index)!
-        setRecordedWord(timestamp.recordedWord)
+        setRecordedWord(timestamp[timestamp.length - 1].recordedWord)
       }
     }
   }
@@ -158,16 +170,6 @@ export function Recorder({
     if (!isRecording || selectedWordIndex === null) return
     const startMs = Date.now() - recordingStartRef.current
     setCurrentWordStartMs(startMs)
-
-    // If this word was already marked, unmark it and reset the timestamp for this word.
-    if (timestamps.has(selectedWordIndex)) {
-      setTimestamps((prev) => {
-        const next = new Map(prev)
-        next.delete(selectedWordIndex)
-        timestampsRef.current = next
-        return next
-      })
-    }
   }
 
   const markEnd = () => {
@@ -180,16 +182,24 @@ export function Recorder({
 
     const endMs = Date.now() - recordingStartRef.current
     const word = collection.words[selectedWordIndex]
+    const wordId = collection.wordIds[selectedWordIndex]
 
     const timestamp = {
       word,
+      wordId,
       startMs: currentWordStartMs,
       endMs,
       recordedWord: recordedWord.trim(),
     }
     setTimestamps((prev) => {
       const next = new Map(prev)
-      next.set(selectedWordIndex, timestamp)
+      const pastTimestamps = next.get(selectedWordIndex)
+
+      if (pastTimestamps === undefined) {
+        next.set(selectedWordIndex, [timestamp])
+      } else {
+        next.set(selectedWordIndex, [...pastTimestamps, timestamp])
+      }
       timestampsRef.current = next
       return next
     })
@@ -214,6 +224,18 @@ export function Recorder({
 
   const markedCount = timestamps.size
   const progress = isRecording ? (markedCount / collection.words.length) * 100 : 0
+
+  const recordedDuration = (wordIndex: number) => {
+    const pastTimestamps = timestamps.get(wordIndex)!
+    const lastTimestamp = pastTimestamps[pastTimestamps.length - 1]
+
+    return (
+      <div className="flex items-center justify-center gap-2 text-center text-sm text-primary">
+        <Check className="size-4" />
+        Recorded: {formatDuration(lastTimestamp.startMs)} - {formatDuration(lastTimestamp.endMs)}
+      </div>
+    )
+  }
 
   const recording = (
     <>
@@ -268,13 +290,7 @@ export function Recorder({
             )}
           </div>
 
-          {timestamps.has(selectedWordIndex) && (
-            <div className="flex items-center justify-center gap-2 text-center text-sm text-primary">
-              <Check className="size-4" />
-              Recorded: {formatDuration(timestamps.get(selectedWordIndex)!.startMs)} -{" "}
-              {formatDuration(timestamps.get(selectedWordIndex)!.endMs)}
-            </div>
-          )}
+          {timestamps.has(selectedWordIndex) && recordedDuration(selectedWordIndex)}
         </div>
       )}
 

@@ -4,10 +4,13 @@ export interface Collection {
   id: string
   name: string
   words: string[]
+  wordIds: string[]
+  wordRecorded: boolean[]
   createdAt: Date
 }
 
 export interface Timestamp {
+  wordId: string
   word: string
   startMs: number
   endMs: number
@@ -22,9 +25,8 @@ export interface Recording {
   size: number
   mimeType: string
   blob: Blob
-  timestamps: { word: string; startMs: number; endMs: number, recordedWord: string }[]
+  timestamps: { word: string; wordId: string; startMs: number; endMs: number; recordedWord: string }[]
 }
-
 
 interface DB extends DBSchema {
   collections: {
@@ -42,7 +44,7 @@ interface DB extends DBSchema {
 const DB_NAME = "recorder-db"
 
 function openRecorderDb() {
-  return openDB<DB>(DB_NAME, 2, {
+  return openDB<DB>(DB_NAME, 3, {
     upgrade(db) {
       if (!db.objectStoreNames.contains("collections")) {
         const collStore = db.createObjectStore("collections", { keyPath: "id" })
@@ -61,9 +63,7 @@ export async function getCollections() {
   try {
     const db = await openRecorderDb()
     const collections = await db.getAll("collections")
-    return collections.sort(
-      (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
-    )
+    return collections.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
   } catch (error) {
     throw error
   }
@@ -73,6 +73,15 @@ export async function addCollection(collection: Collection) {
   try {
     const db = await openRecorderDb()
     await db.add("collections", collection)
+  } catch (error) {
+    throw error
+  }
+}
+
+export async function updateCollection(collection: Collection) {
+  try {
+    const db = await openRecorderDb()
+    await db.put("collections", collection)
   } catch (error) {
     throw error
   }
@@ -103,9 +112,7 @@ export async function getRecordings(collectionId: string) {
     const tx = db.transaction("recordings", "readonly")
     const index = tx.store.index("by-collectionId")
     const recordings = await index.getAll(collectionId)
-    return recordings.sort(
-      (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
-    )
+    return recordings.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
   } catch (error) {
     throw error
   }

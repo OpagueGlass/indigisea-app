@@ -12,7 +12,7 @@ export default function WordModal({
   selectWord,
 }: {
   collection: Collection
-  timestamps: Map<number, Timestamp>
+  timestamps: Map<number, Timestamp[]>
   selectedWordIndex: number | null
   selectWord: (index: number) => void
 }) {
@@ -22,11 +22,14 @@ export default function WordModal({
     <Dialog open={isWordModalOpen} onOpenChange={setIsWordModalOpen}>
       <DialogTrigger asChild>
         <Button size="lg" variant="outline" className="gap-2">
-          {selectedWordIndex !== null ?  (
+          {selectedWordIndex !== null ? (
             <>
               <RotateCcw className="size-4" />
               Select Different Word
-            </>) : "Select Word"}
+            </>
+          ) : (
+            "Select Word"
+          )}
         </Button>
       </DialogTrigger>
       <DialogContent className="flex max-h-[80vh] flex-col overflow-hidden">
@@ -40,7 +43,11 @@ export default function WordModal({
           <div className="divide-y">
             {collection.words.map((word, index) => {
               const isMarked = timestamps.has(index)
-              const timestamp = timestamps.get(index)
+              const pastTimestamps = timestamps.get(index)
+              const lastTimestamp =
+                pastTimestamps !== undefined && pastTimestamps.length > 0
+                  ? pastTimestamps[pastTimestamps.length - 1]
+                  : null
               const isSelected = selectedWordIndex === index
 
               return (
@@ -51,22 +58,22 @@ export default function WordModal({
                     setIsWordModalOpen(false)
                   }}
                   className={`flex w-full items-center justify-between gap-4 px-2 py-3 text-left transition-colors hover:bg-muted ${
-                                isSelected ? "bg-primary/10" : ""
-                              }`}
+                    isSelected ? "bg-primary/10" : ""
+                  }`}
                 >
                   <div className="flex min-w-0 items-center gap-3">
                     <span className="w-6 shrink-0 text-xs text-muted-foreground">{index + 1}.</span>
                     <div className="min-w-0">
-                       <p className={`truncate font-medium ${isSelected ? "text-primary" : ""}`}>{word}</p>
+                      <p className={`truncate font-medium ${isSelected ? "text-primary" : ""}`}>{word}</p>
                       {/* {hasTranslation && (
                         <p className="truncate text-sm text-muted-foreground">{translations[index]}</p>
                       )} */}
                     </div>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
-                    {isMarked && timestamp && (
+                    {isMarked && lastTimestamp && (
                       <span className="text-xs text-muted-foreground">
-                        {formatDuration(timestamp.startMs)} - {formatDuration(timestamp.endMs)}
+                        {formatDuration(lastTimestamp.startMs)} - {formatDuration(lastTimestamp.endMs)}
                       </span>
                     )}
                     {isMarked ? (
@@ -78,11 +85,13 @@ export default function WordModal({
                           <RotateCcw className="size-3" />
                         </span>
                       </div>
-                    ) : isSelected ? (
-                                  <span className="size-5 rounded-full border-2 border-primary bg-primary/30" />
-                                ) : (
-                                  <span className="size-5 rounded-full border-2 border-muted-foreground/30" />
-                                )}
+                    ) : collection.wordRecorded[index] ? (
+                      <span className="flex size-5 items-center justify-center rounded-full bg-muted-foreground text-primary-foreground">
+                        <Check className="size-3" />
+                      </span>
+                    ) : (
+                      <span className="size-5 rounded-full border-2 border-muted-foreground/30" />
+                    )}
                   </div>
                 </button>
               )
