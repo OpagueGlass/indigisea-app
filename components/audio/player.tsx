@@ -80,7 +80,6 @@ export function Player({
           }
         }
       }
-      console.log(newWordRecorded)
 
       const newCollection = {
         ...collection,

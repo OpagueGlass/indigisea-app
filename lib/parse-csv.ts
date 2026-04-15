@@ -15,7 +15,7 @@ function updateResult(file: File, setWords: (words: Word[]) => void) {
       try {
         const headers = results.data[0] as string[]
         const data = results.data.slice(1) as string[][]
-        console.log(data)
+
         if (data.length === 0) {
           toast.error(`CSV file ${file.name} is empty.`)
           return
