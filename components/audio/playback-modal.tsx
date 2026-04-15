@@ -58,7 +58,7 @@ export default function PlaybackModal({
             {playbackRecording && (
               <>
                 {formatDuration(playbackRecording.durationMs)} - {formatBytes(playbackRecording.size)} -{" "}
-                {playbackRecording.timestamps.length} words marked
+                {new Set(playbackRecording.timestamps.map((t) => t.wordId)).size} words marked
               </>
             )}
           </DialogDescription>

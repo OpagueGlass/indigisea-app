@@ -210,7 +210,7 @@ export default function Page() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <p className="mb-4 line-clamp-2 text-sm text-muted-foreground">
+                  <p className="mb-4 line-clamp-2 text-sm text-muted-foreground truncate">
                     {collection.words.slice(0, 3).join(", ")}
                     {collection.words.length > 3 && "..."}
                   </p>
