@@ -24,12 +24,12 @@ export function Player({
   recordings,
   collection,
   loadRecordings,
-  loadCollections,
+  setSelectedCollection,
 }: {
   recordings: Recording[]
   collection: Collection
   loadRecordings: () => Promise<void>
-  loadCollections: () => Promise<void>
+  setSelectedCollection: (collection: Collection) => void
 }) {
   const [recordingUrls, setRecordingUrls] = useState<Record<string, string>>({})
   const [metadata, setMetadata] = useState<Record<string, string>>({})
@@ -87,7 +87,7 @@ export function Player({
       }
 
       await updateCollection(newCollection)
-      await loadCollections()
+      setSelectedCollection(newCollection)
       await loadRecordings()
       if (selectedRecording?.id === id) {
         setSelectedRecording(null)

@@ -52,10 +52,6 @@ export default function Page() {
     try {
       const collections = await getCollections()
       setCollections(collections)
-      if (selectedCollection) {
-        const updatedSelected = collections.find((c) => c.id === selectedCollection.id) || null
-        setSelectedCollection(updatedSelected)
-      }
     } catch (error) {
       toast.error("Could not load collections: " + (error as Error).message)
     }
@@ -120,7 +116,13 @@ export default function Page() {
   }, [])
 
   if (selectedCollection) {
-    return <CollectionRecorder collection={selectedCollection} loadCollections={loadCollections} onBack={() => setSelectedCollection(null)} />
+    return (
+      <CollectionRecorder
+        collection={selectedCollection}
+        setSelectedCollection={setSelectedCollection}
+        onBack={() => setSelectedCollection(null)}
+      />
+    )
   }
 
   return (
@@ -210,7 +212,7 @@ export default function Page() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <p className="mb-4 line-clamp-2 text-sm text-muted-foreground truncate">
+                  <p className="mb-4 line-clamp-2 truncate text-sm text-muted-foreground">
                     {collection.words.slice(0, 3).join(", ")}
                     {collection.words.length > 3 && "..."}
                   </p>
