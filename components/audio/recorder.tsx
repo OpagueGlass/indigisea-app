@@ -169,6 +169,7 @@ export function Recorder({
   const markStart = () => {
     if (!isRecording || selectedWordIndex === null) return
     const startMs = Date.now() - recordingStartRef.current
+    setWordEndMarked(false)
     setCurrentWordStartMs(startMs)
   }
 
