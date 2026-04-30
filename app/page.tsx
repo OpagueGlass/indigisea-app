@@ -28,8 +28,10 @@ import {
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { addCollection, Collection, getCollections, removeCollection } from "@/lib/db"
-import { parseCSVFile, Word } from "@/lib/parse-csv"
+import { parseCSVFile, Word, collectionTypes } from "@/lib/parse-csv"
 import { toast } from "sonner"
+import { SelectContent, SelectItem, SelectTrigger, SelectValue, Select } from "@/components/ui/select"
+import { Badge } from "@/components/ui/badge"
 
 export default function Page() {
   const [collections, setCollections] = useState<Collection[]>([])
@@ -40,12 +42,23 @@ export default function Page() {
   const [loading, setLoading] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [collectionToDelete, setCollectionToDelete] = useState<Collection | null>(null)
+  const [selectedCollectionType, setSelectedCollectionType] = useState(collectionTypes[0].value)
+  const [file, setFile] = useState<File | null>(null)
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     setWords([])
     const file = event.target.files?.[0]
     if (!file) return
-    parseCSVFile(file, setWords)
+    setFile(file)
+    parseCSVFile(file, setWords, selectedCollectionType)
+  }
+
+  const setType = (value: string) => {
+    setSelectedCollectionType(value)
+    setWords([])
+    if (file) {
+      parseCSVFile(file, setWords, value)
+    }
   }
 
   const loadCollections = async () => {
@@ -68,6 +81,7 @@ export default function Page() {
     }
 
     try {
+      // Only audio collections have translated words
       const newCollection = {
         id: crypto.randomUUID(),
         name: newCollectionName.trim(),
@@ -75,6 +89,7 @@ export default function Page() {
         words: words.map((word) => word.word),
         wordRecorded: words.map((_) => false),
         createdAt: new Date(),
+        translatedWords: selectedCollectionType === "audio" ? words.map((word) => word.translatedWord!) : null,
       }
 
       await addCollection(newCollection)
@@ -83,6 +98,7 @@ export default function Page() {
       setIsCreateDialogOpen(false)
       setNewCollectionName("")
       setWords([])
+      setFile(null)
       toast.success("Collection created successfully.")
     } catch (error) {
       toast.error("Could not create collection: " + (error as Error).message)
@@ -140,6 +156,7 @@ export default function Page() {
         onOpenChange={(value) => {
           setIsCreateDialogOpen(value)
           setWords([])
+          setFile(null)
         }}
       >
         <DialogTrigger asChild>
@@ -162,6 +179,21 @@ export default function Page() {
                 value={newCollectionName}
                 onChange={(e) => setNewCollectionName(e.target.value)}
               />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="collection-name">Collection Type</FieldLabel>
+              <Select onValueChange={(value) => setType(value)} defaultValue={selectedCollectionType}>
+                <SelectTrigger id="form-country">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {collectionTypes.map((type) => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </Field>
             <Field>
               <FieldLabel htmlFor="csv-upload">Upload Word List</FieldLabel>
@@ -207,6 +239,9 @@ export default function Page() {
                     <FolderOpen className="size-5 text-primary" />
                     {collection.name}
                   </CardTitle>
+                  <Badge variant="secondary" className="absolute top-4 right-4">
+                    {collection.translatedWords ? "Audio Only" : "Transcript"}
+                  </Badge>
                   <CardDescription>
                     {collection.words.length} words • Created {new Date(collection.createdAt).toLocaleDateString()}
                   </CardDescription>

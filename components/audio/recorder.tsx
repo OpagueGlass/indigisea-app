@@ -176,7 +176,7 @@ export function Recorder({
   const markEnd = () => {
     if (!isRecording || selectedWordIndex === null || currentWordStartMs === null) return
 
-    if (recordedWord.trim() === "") {
+    if (recordedWord.trim() === "" && !collection.translatedWords) {
       toast.error("Please enter the word before marking the end time.")
       return
     }
@@ -185,13 +185,15 @@ export function Recorder({
     const word = collection.words[selectedWordIndex]
     const wordId = collection.wordIds[selectedWordIndex]
 
+    // Use the translated word for audio collections, and user input for transcript collections
     const timestamp = {
       word,
       wordId,
       startMs: currentWordStartMs,
       endMs,
-      recordedWord: recordedWord.trim(),
+      recordedWord: collection.translatedWords ? collection.translatedWords[selectedWordIndex] : recordedWord.trim(),
     }
+    
     setTimestamps((prev) => {
       const next = new Map(prev)
       const pastTimestamps = next.get(selectedWordIndex)
@@ -238,6 +240,35 @@ export function Recorder({
     )
   }
 
+  const recorderWordInput = (selectedWordIndex: number | null) => {
+    if (selectedWordIndex === null) return null
+
+    if (collection.translatedWords) {
+      // audio types will use the translated word
+      const originalTranslation = collection.translatedWords[selectedWordIndex]
+      return <>
+        <p className="mb-2 text-sm text-muted-foreground">Translated Word</p>
+        <p className="text-3xl font-bold text-foreground">{originalTranslation}</p>
+      </>
+    }
+    
+    // Only allow input for transcript collections
+    return (
+      <>
+        <Label htmlFor="translation" className="text-sm">
+          Translation
+        </Label>
+        <Input
+          id="translation"
+          placeholder="Enter translation..."
+          value={recordedWord}
+          onChange={(e) => setRecordedWord(e.target.value)}
+          disabled={wordEndMarked}
+        />
+      </>
+    )
+  }
+
   const recording = (
     <>
       {/* Progress */}
@@ -259,18 +290,7 @@ export function Recorder({
             <p className="text-3xl font-bold text-foreground">{collection.words[selectedWordIndex]}</p>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="translation" className="text-sm">
-              Translation
-            </Label>
-            <Input
-              id="translation"
-              placeholder="Enter translation..."
-              value={recordedWord}
-              onChange={(e) => setRecordedWord(e.target.value)}
-              disabled={wordEndMarked}
-            />
-          </div>
+          <div className="justify-center space-y-2 text-center">{recorderWordInput(selectedWordIndex)}</div>
 
           <div className="flex flex-wrap justify-center gap-3">
             {currentWordStartMs === null ? (

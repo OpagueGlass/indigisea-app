@@ -7,6 +7,7 @@ export interface Collection {
   wordIds: string[]
   wordRecorded: boolean[]
   createdAt: Date
+  translatedWords: string[] | null
 }
 
 export interface Timestamp {
@@ -44,7 +45,7 @@ interface DB extends DBSchema {
 const DB_NAME = "recorder-db"
 
 function openRecorderDb() {
-  return openDB<DB>(DB_NAME, 3, {
+  return openDB<DB>(DB_NAME, 4, {
     upgrade(db) {
       if (!db.objectStoreNames.contains("collections")) {
         const collStore = db.createObjectStore("collections", { keyPath: "id" })
