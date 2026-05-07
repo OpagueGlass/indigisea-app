@@ -1,8 +1,10 @@
-import Link from "next/link";
-import { getTranslations } from "next-intl/server";
+"use client";
 
-export default async function OfflinePage() {
-  const t = await getTranslations()
+import Link from "next/link";
+import { useTranslations } from "next-intl";
+
+export default function OfflinePage() {
+  const t = useTranslations()
 
   return (
     <main className="grid min-h-svh place-items-center bg-[radial-gradient(circle_at_top,_hsl(192_55%_92%),_transparent_55%),linear-gradient(180deg,_hsl(198_48%_97%),_hsl(201_36%_93%))] p-6">

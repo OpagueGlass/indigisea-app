@@ -10,21 +10,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { useAppLocale } from "@/components/i18n-provider"
 import { Check, Languages, Monitor, Moon, Settings, Sun } from "lucide-react"
-import { useLocale, useTranslations } from "next-intl"
+import { useTranslations } from "next-intl"
 import { useTheme } from "next-themes"
-import { useRouter } from "next/navigation"
 
 export function SettingsDropdown() {
   const { theme, setTheme } = useTheme()
   const t = useTranslations()
-  const locale = useLocale()
-  const router = useRouter()
-
-  const setLocaleCookie = (nextLocale: "en" | "ms") => {
-    document.cookie = `locale=${nextLocale}; path=/; max-age=31536000; samesite=lax`
-    router.refresh()
-  }
+  const { locale, setLocale } = useAppLocale()
 
   const themes = [
     { value: "light", label: t("settings.light"), icon: Sun },
@@ -69,7 +63,7 @@ export function SettingsDropdown() {
             {t("settings.language")}
           </DropdownMenuLabel>
           {languages.map(([code, name]) => (
-            <DropdownMenuItem key={code} onClick={() => setLocaleCookie(code)} className="gap-2">
+              <DropdownMenuItem key={code} onClick={() => setLocale(code)} className="gap-2">
               <Languages className="size-4" />
               {name}
               {locale === code && <Check className="ml-auto size-4" />}

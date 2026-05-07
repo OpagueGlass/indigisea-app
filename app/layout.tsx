@@ -1,13 +1,13 @@
 import { Geist, Geist_Mono, Inter } from "next/font/google"
 
 import "./globals.css"
+import { I18nProvider } from "@/components/i18n-provider"
 import { ThemeProvider } from "@/components/theme-provider"
 import { cn } from "@/lib/utils";
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { Toaster } from "@/components/ui/sonner";
-import { NextIntlClientProvider } from "next-intl";
-import { getLocale, getMessages } from "next-intl/server";
+import { getLocale } from "next-intl/server";
 
 const inter = Inter({subsets:['latin'],variable:'--font-sans'})
 
@@ -58,7 +58,7 @@ export default async function RootLayout({
   children: React.ReactNode
 }>) {
   const locale = await getLocale();
-  const messages = await getMessages();
+  const initialLocale = locale === "ms" ? "ms" : "en";
 
   return (
     <html
@@ -68,9 +68,9 @@ export default async function RootLayout({
     >
       <body>
         <ThemeProvider>
-          <NextIntlClientProvider locale={locale} messages={messages}>
+          <I18nProvider initialLocale={initialLocale}>
             {children}
-          </NextIntlClientProvider>
+          </I18nProvider>
         </ThemeProvider>
         <Toaster />
       </body>
