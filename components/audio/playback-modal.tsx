@@ -1,5 +1,6 @@
 import { Recording } from "@/lib/db"
 import { formatBytes, formatDuration } from "@/lib/utils"
+import { useTranslations } from "next-intl"
 import { useRef, useState } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../ui/dialog"
 
@@ -14,6 +15,8 @@ export default function PlaybackModal({
   playbackRecording: Recording | null
   src: string | null
 }) {
+  const t = useTranslations()
+
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const [isPlaying, setIsPlaying] = useState(false)
 
@@ -46,19 +49,24 @@ export default function PlaybackModal({
         <DialogHeader>
           <DialogTitle>
             {playbackRecording &&
-              new Date(playbackRecording.createdAt).toLocaleString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-                day: "2-digit",
-                month: "2-digit",
-                year: "numeric",
-              })}
+              new Date(playbackRecording.createdAt)
+                .toLocaleString("en-MY", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  day: "2-digit",
+                  month: "2-digit",
+                  year: "numeric",
+                })
+                .toLocaleUpperCase()}
           </DialogTitle>
           <DialogDescription>
             {playbackRecording && (
               <>
-                {formatDuration(playbackRecording.durationMs)} - {formatBytes(playbackRecording.size)} -{" "}
-                {new Set(playbackRecording.timestamps.map((t) => t.wordId)).size} words marked
+                {t("recordings.summaryLine", {
+                  duration: formatDuration(playbackRecording.durationMs),
+                  size: formatBytes(playbackRecording.size),
+                  count: new Set(playbackRecording.timestamps.map((t) => t.wordId)).size,
+                })}
               </>
             )}
           </DialogDescription>
@@ -82,14 +90,12 @@ export default function PlaybackModal({
             {/* Word Timestamps */}
             <div className="space-y-3">
               <div>
-                <p className="text-sm font-medium">Word Timestamps</p>
-                <p className="text-xs text-muted-foreground">Click a word to jump to that point in the recording.</p>
+                <p className="text-sm font-medium">{t("playback.wordTimestampsTitle")}</p>
+                <p className="text-xs text-muted-foreground">{t("playback.wordTimestampsDescription")}</p>
               </div>
               <div className="max-h-64 overflow-y-auto">
                 {playbackRecording.timestamps.length === 0 ? (
-                  <p className="py-4 text-center text-sm text-muted-foreground">
-                    No words were marked in this recording.
-                  </p>
+                  <p className="py-4 text-center text-sm text-muted-foreground">{t("playback.noWordsMarked")}</p>
                 ) : (
                   <div className="flex flex-wrap gap-2">
                     {playbackRecording.timestamps.map((wt, i) => {

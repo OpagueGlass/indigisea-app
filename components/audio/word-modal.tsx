@@ -3,6 +3,7 @@ import { Collection, Timestamp } from "@/lib/db"
 import { formatDuration } from "@/lib/utils"
 import { Check, RotateCcw } from "lucide-react"
 import { useState } from "react"
+import { useTranslations } from "next-intl"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog"
 
 export default function WordModal({
@@ -16,6 +17,7 @@ export default function WordModal({
   selectedWordIndex: number | null
   selectWord: (index: number) => void
 }) {
+  const t = useTranslations()
   const [isWordModalOpen, setIsWordModalOpen] = useState(false)
 
   return (
@@ -25,18 +27,18 @@ export default function WordModal({
           {selectedWordIndex !== null ? (
             <>
               <RotateCcw className="size-4" />
-              Select Different Word
+              {t("wordModal.triggerSelectDifferentWord")}
             </>
           ) : (
-            "Select Word"
+            t("wordModal.triggerSelectWord")
           )}
         </Button>
       </DialogTrigger>
       <DialogContent className="flex max-h-[80vh] flex-col overflow-hidden">
         <DialogHeader>
-          <DialogTitle>Select a Word</DialogTitle>
+          <DialogTitle>{t("wordModal.title")}</DialogTitle>
           <DialogDescription>
-            Choose a word to record. Words with a checkmark have already been marked.
+            {t("wordModal.description")}
           </DialogDescription>
         </DialogHeader>
         <div className="-mx-4 flex-1 overflow-y-auto px-6">

@@ -1,0 +1,128 @@
+{
+    "brand": {
+        "appName": "Indigisea Recorder",
+        "shortName": "Indigisea",
+        "titleTemplate": "%s - Indigisea Recorder",
+        "description": "Recording words from the indigenous community"
+    },
+    "common": {
+        "cancel": "Cancel",
+        "delete": "Delete",
+        "play": "Play",
+        "exportMetadata": "Export Metadata",
+        "downloadAudio": "Download Audio",
+        "openMenuSrOnly": "Open menu",
+        "progress": "Progress"
+    },
+    "errors": {
+        "couldNotLoadCollections": "Could not load collections: {message}",
+        "couldNotCreateCollection": "Could not create collection: {message}",
+        "couldNotDeleteCollection": "Could not delete collection: {message}",
+        "couldNotLoadRecordings": "Could not load recordings: {message}",
+        "couldNotDeleteRecording": "Could not delete recording: {message}",
+        "couldNotSaveRecording": "Could not save this recording: {message}",
+        "micDeniedOrUnavailable": "Microphone access was denied or unavailable: {message}"
+    },
+    "success": {
+        "collectionCreated": "Collection created successfully."
+    },
+    "validation": {
+        "enterCollectionName": "Please enter a collection name.",
+        "uploadCsvFirst": "Please upload a CSV with words first.",
+        "enterWordBeforeEndTime": "Please enter the word before marking the end time."
+    },
+    "collectionTypes": {
+        "transcriptWithAudio": "Transcript with Audio",
+        "audioOnly": "Audio Only"
+    },
+    "home": {
+        "headerKicker": "Offline Word Recorder",
+        "headerTitle": "Indigisea Voice Archive",
+        "headerDescription": "Upload a CSV with words to create a collection, then record pronunciations with timestamps for each word.",
+        "createCollectionButton": "Create Collection",
+        "createDialogTitle": "Create New Collection",
+        "createDialogDescription": "Upload a CSV file and name your collection based on the theme.",
+        "collectionNameLabel": "Collection Name",
+        "collectionNamePlaceholder": "Enter collection theme",
+        "collectionTypeLabel": "Collection Type",
+        "uploadWordListLabel": "Upload Word List",
+        "uploadWordListHelperEmpty": "Select a CSV word list to upload",
+        "previewWordsLoaded": "{count} words loaded: {preview}",
+        "collectionsSectionTitle": "Your Collections",
+        "emptyCollections": "No collections yet. Create one by uploading a CSV word list.",
+        "badgeAudioOnly": "Audio Only",
+        "badgeTranscript": "Transcript",
+        "openAndRecord": "Open & Record",
+        "collectionCardWordCount": "{count} words",
+        "deleteCollectionTitle": "Delete Collection",
+        "deleteCollectionDescription": "Are you sure you want to delete this collection? This action cannot be undone."
+    },
+    "recordingSession": {
+        "backToCollections": "Back to Collections",
+        "kicker": "Recording Session",
+        "wordsInCollection": "{count} words in this collection",
+        "browserNotSupported": "This browser does not support audio recording. Try Chrome, Edge, or Safari."
+    },
+    "recorder": {
+        "cardTitle": "Record Words",
+        "cardDescription": "Start recording, pick a word from the list, then mark the start and end of each pronunciation.",
+        "startRecording": "Start Recording",
+        "stopAndSave": "Stop & Save",
+        "progressCount": "{marked} / {total} words marked",
+        "selectedWordLabel": "Selected Word",
+        "translatedWordLabel": "Translated Word",
+        "translationLabel": "Translation",
+        "translationPlaceholder": "Enter translation...",
+        "markStart": "Mark Start",
+        "markEnd": "Mark End",
+        "startedAt": "Started at {time}",
+        "recordedRange": "Recorded: {start} - {end}",
+        "selectWordToStart": "Select a word to start marking",
+        "recordingEmpty": "Recording was empty. Please try again."
+    },
+    "wordModal": {
+        "triggerSelectWord": "Select Word",
+        "triggerSelectDifferentWord": "Select Different Word",
+        "title": "Select a Word",
+        "description": "Choose a word to record. Words with a checkmark have already been marked."
+    },
+    "recordings": {
+        "summaryLine": "{duration} - {size} - {count} words marked"
+    },
+    "player": {
+        "sectionTitle": "Saved Recordings",
+        "empty": "No recordings yet. Start recording to create one.",
+        "deleteRecordingTitle": "Delete Recording",
+        "deleteRecordingDescription": "Are you sure you want to delete this recording? This action cannot be undone."
+    },
+    "playback": {
+        "wordTimestampsTitle": "Word Timestamps",
+        "wordTimestampsDescription": "Click a word to jump to that point in the recording.",
+        "noWordsMarked": "No words were marked in this recording."
+    },
+    "csv": {
+        "errorParsing": "Error parsing {fileName}: {errors}",
+        "emptyFile": "CSV file {fileName} is empty.",
+        "needs3ColumnsAudio": "CSV file {fileName} must have at least 3 columns for audio collections (id, word, translatedWord).",
+        "needs2ColumnsTranscript": "CSV file {fileName} must have at least 2 columns for transcript collections (id, word).",
+        "unexpectedError": "Unexpected error processing {fileName}: {message}"
+    },
+    "offline": {
+        "kicker": "Offline Mode",
+        "title": "No Connection Needed",
+        "description": "Indigisea Recorder is available offline. Return to the home screen to continue recording.",
+        "goToRecorder": "Go to Recorder"
+    },
+    "settings": {
+        "title": "Settings",
+        "theme": "Theme",
+        "language": "Language",
+        "light": "Light",
+        "dark": "Dark",
+        "system": "System",
+        "languages": {
+            "en": "English",
+            "ms": "Malay"
+        }
+    }
+}

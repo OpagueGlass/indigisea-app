@@ -1,0 +1,128 @@
+{
+    "brand": {
+        "appName": "Perakam Indigisea",
+        "shortName": "Indigisea",
+        "titleTemplate": "%s - Perakam Indigisea",
+        "description": "Merakam perkataan daripada komuniti pribumi"
+    },
+    "common": {
+        "cancel": "Batal",
+        "delete": "Padam",
+        "play": "Main",
+        "exportMetadata": "Eksport Metadata",
+        "downloadAudio": "Muat Turun Audio",
+        "openMenuSrOnly": "Buka menu",
+        "progress": "Kemajuan"
+    },
+    "errors": {
+        "couldNotLoadCollections": "Tidak dapat memuatkan koleksi: {message}",
+        "couldNotCreateCollection": "Tidak dapat mencipta koleksi: {message}",
+        "couldNotDeleteCollection": "Tidak dapat memadam koleksi: {message}",
+        "couldNotLoadRecordings": "Tidak dapat memuatkan rakaman: {message}",
+        "couldNotDeleteRecording": "Tidak dapat memadam rakaman: {message}",
+        "couldNotSaveRecording": "Tidak dapat menyimpan rakaman ini: {message}",
+        "micDeniedOrUnavailable": "Akses mikrofon ditolak atau tidak tersedia: {message}"
+    },
+    "success": {
+        "collectionCreated": "Koleksi berjaya dicipta."
+    },
+    "validation": {
+        "enterCollectionName": "Sila masukkan nama koleksi.",
+        "uploadCsvFirst": "Sila muat naik CSV dengan perkataan terlebih dahulu.",
+        "enterWordBeforeEndTime": "Sila masukkan perkataan sebelum menandakan masa tamat."
+    },
+    "collectionTypes": {
+        "transcriptWithAudio": "Transkrip dengan Audio",
+        "audioOnly": "Audio Sahaja"
+    },
+    "home": {
+        "headerKicker": "Perakam Perkataan Luar Talian",
+        "headerTitle": "Arkib Suara Indigisea",
+        "headerDescription": "Muat naik CSV dengan perkataan untuk mencipta koleksi, kemudian rakam sebutan dengan tanda masa untuk setiap perkataan.",
+        "createCollectionButton": "Cipta Koleksi",
+        "createDialogTitle": "Cipta Koleksi Baru",
+        "createDialogDescription": "Muat naik fail CSV dan namakan koleksi anda berdasarkan tema.",
+        "collectionNameLabel": "Nama Koleksi",
+        "collectionNamePlaceholder": "Masukkan tema koleksi",
+        "collectionTypeLabel": "Jenis Koleksi",
+        "uploadWordListLabel": "Muat Naik Senarai Perkataan",
+        "uploadWordListHelperEmpty": "Pilih senarai perkataan CSV untuk dimuat naik",
+        "previewWordsLoaded": "{count} perkataan dimuat: {preview}",
+        "collectionsSectionTitle": "Koleksi Anda",
+        "emptyCollections": "Tiada koleksi lagi. Cipta satu dengan memuat naik senarai perkataan CSV.",
+        "badgeAudioOnly": "Audio Sahaja",
+        "badgeTranscript": "Transkrip",
+        "openAndRecord": "Buka & Rakam",
+        "collectionCardWordCount": "{count} perkataan",
+        "deleteCollectionTitle": "Padam Koleksi",
+        "deleteCollectionDescription": "Adakah anda pasti mahu memadam koleksi ini? Tindakan ini tidak boleh dibatalkan."
+    },
+    "recordingSession": {
+        "backToCollections": "Kembali ke Koleksi",
+        "kicker": "Sesi Rakaman",
+        "wordsInCollection": "{count} perkataan dalam koleksi ini",
+        "browserNotSupported": "Pelayar ini tidak menyokong rakaman audio. Cuba Chrome, Edge, atau Safari."
+    },
+    "recorder": {
+        "cardTitle": "Rakam Perkataan",
+        "cardDescription": "Mulakan rakaman, pilih perkataan dari senarai, kemudian tandakan permulaan dan tamat setiap sebutan.",
+        "startRecording": "Mula Rakaman",
+        "stopAndSave": "Henti & Simpan",
+        "progressCount": "{marked} / {total} perkataan ditandakan",
+        "selectedWordLabel": "Perkataan Dipilih",
+        "translatedWordLabel": "Perkataan Diterjemah",
+        "translationLabel": "Terjemahan",
+        "translationPlaceholder": "Masukkan terjemahan...",
+        "markStart": "Tandakan Mula",
+        "markEnd": "Tandakan Tamat",
+        "startedAt": "Bermula pada {time}",
+        "recordedRange": "Dirakam: {start} - {end}",
+        "selectWordToStart": "Pilih perkataan untuk mula menandakan",
+        "recordingEmpty": "Rakaman kosong. Sila cuba lagi."
+    },
+    "wordModal": {
+        "triggerSelectWord": "Pilih Perkataan",
+        "triggerSelectDifferentWord": "Pilih Perkataan Berbeza",
+        "title": "Pilih Perkataan",
+        "description": "Pilih perkataan untuk dirakam. Perkataan dengan tanda semak telah ditandakan."
+    },
+    "recordings": {
+        "summaryLine": "{duration} - {size} - {count} perkataan ditandakan"
+    },
+    "player": {
+        "sectionTitle": "Rakaman Disimpan",
+        "empty": "Tiada rakaman lagi. Mulakan rakaman untuk mencipta satu.",
+        "deleteRecordingTitle": "Padam Rakaman",
+        "deleteRecordingDescription": "Adakah anda pasti mahu memadam rakaman ini? Tindakan ini tidak boleh dibatalkan."
+    },
+    "playback": {
+        "wordTimestampsTitle": "Tanda Masa Perkataan",
+        "wordTimestampsDescription": "Klik perkataan untuk lompat ke titik tersebut dalam rakaman.",
+        "noWordsMarked": "Tiada perkataan ditandakan dalam rakaman ini."
+    },
+    "csv": {
+        "errorParsing": "Ralat semasa memproses {fileName}: {errors}",
+        "emptyFile": "Fail CSV {fileName} kosong.",
+        "needs3ColumnsAudio": "Fail CSV {fileName} mesti mempunyai sekurang-kurangnya 3 lajur untuk koleksi audio (id, perkataan, perkataanDiterjemah).",
+        "needs2ColumnsTranscript": "Fail CSV {fileName} mesti mempunyai sekurang-kurangnya 2 lajur untuk koleksi transkrip (id, perkataan).",
+        "unexpectedError": "Ralat tidak dijangka semasa memproses {fileName}: {message}"
+    },
+    "offline": {
+        "kicker": "Mod Luar Talian",
+        "title": "Tidak Memerlukan Sambungan",
+        "description": "Perakam Indigisea boleh digunakan tanpa sambungan internet. Kembali ke skrin utama untuk terus merakam.",
+        "goToRecorder": "Pergi ke Perakam"
+    },
+    "settings": {
+        "title": "Tetapan",
+        "theme": "Tema",
+        "language": "Bahasa",
+        "light": "Cerah",
+        "dark": "Gelap",
+        "system": "Sistem",
+        "languages": {
+            "en": "Inggeris",
+            "ms": "Melayu"
+        }
+    }
+}

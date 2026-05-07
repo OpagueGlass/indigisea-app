@@ -7,6 +7,7 @@ import { Collection, addRecording, Timestamp, updateCollection } from "@/lib/db"
 import { formatDuration } from "@/lib/utils"
 import { Check, Mic, Play, Square } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
+import { useTranslations } from "next-intl"
 import { toast } from "sonner"
 import { Input } from "../ui/input"
 import { Label } from "../ui/label"
@@ -29,6 +30,8 @@ export function Recorder({
   loadRecordings: () => Promise<void>
   cleanupStream: () => void
 }) {
+  const t = useTranslations()
+
   const chunksRef = useRef<BlobPart[]>([])
   const recordingStartRef = useRef<number>(0)
   const timestampsRef = useRef<Map<number, Timestamp[]>>(new Map())
@@ -59,7 +62,7 @@ export function Recorder({
       })
 
       if (blob.size === 0) {
-        throw new Error("Recording was empty. Please try again.")
+        throw new Error(t("recorder.recordingEmpty"))
       }
 
       const timestampsArray = Array.from(timestampsRef.current.entries())
@@ -92,7 +95,7 @@ export function Recorder({
       await updateCollection(newCollection)
       await loadRecordings()
     } catch (error) {
-      toast.error("Could not save this recording: " + (error as Error).message)
+      toast.error(t("errors.couldNotSaveRecording", { message: (error as Error).message }))
     }
     setIsSaving(false)
     cleanupStream()
@@ -130,7 +133,7 @@ export function Recorder({
       setIsRecording(true)
     } catch (error) {
       cleanupStream()
-      toast.error("Microphone access was denied or unavailable: " + (error as Error).message)
+      toast.error(t("errors.micDeniedOrUnavailable", { message: (error as Error).message }))
     }
   }
 
@@ -177,7 +180,7 @@ export function Recorder({
     if (!isRecording || selectedWordIndex === null || currentWordStartMs === null) return
 
     if (recordedWord.trim() === "" && !collection.translatedWords) {
-      toast.error("Please enter the word before marking the end time.")
+      toast.error(t("validation.enterWordBeforeEndTime"))
       return
     }
 
@@ -235,7 +238,10 @@ export function Recorder({
     return (
       <div className="flex items-center justify-center gap-2 text-center text-sm text-primary">
         <Check className="size-4" />
-        Recorded: {formatDuration(lastTimestamp.startMs)} - {formatDuration(lastTimestamp.endMs)}
+        {t("recorder.recordedRange", {
+          start: formatDuration(lastTimestamp.startMs),
+          end: formatDuration(lastTimestamp.endMs),
+        })}
       </div>
     )
   }
@@ -247,7 +253,7 @@ export function Recorder({
       // audio types will use the translated word
       const originalTranslation = collection.translatedWords[selectedWordIndex]
       return <>
-        <p className="mb-2 text-sm text-muted-foreground">Translated Word</p>
+        <p className="mb-2 text-sm text-muted-foreground">{t("recorder.translatedWordLabel")}</p>
         <p className="text-3xl font-bold text-foreground">{originalTranslation}</p>
       </>
     }
@@ -256,11 +262,11 @@ export function Recorder({
     return (
       <>
         <Label htmlFor="translation" className="text-sm">
-          Translation
+          {t("recorder.translationLabel")}
         </Label>
         <Input
           id="translation"
-          placeholder="Enter translation..."
+          placeholder={t("recorder.translationPlaceholder")}
           value={recordedWord}
           onChange={(e) => setRecordedWord(e.target.value)}
           disabled={wordEndMarked}
@@ -274,9 +280,9 @@ export function Recorder({
       {/* Progress */}
       <div className="space-y-2">
         <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">Progress</span>
+          <span className="text-muted-foreground">{t("common.progress")}</span>
           <span className="font-medium">
-            {markedCount} / {collection.words.length} words marked
+            {t("recorder.progressCount", { marked: markedCount, total: collection.words.length })}
           </span>
         </div>
         <Progress value={progress} />
@@ -286,7 +292,7 @@ export function Recorder({
       {selectedWordIndex !== null && (
         <div className="space-y-4 rounded-lg border bg-muted/50 p-6">
           <div className="text-center">
-            <p className="mb-2 text-sm text-muted-foreground">Selected Word</p>
+            <p className="mb-2 text-sm text-muted-foreground">{t("recorder.selectedWordLabel")}</p>
             <p className="text-3xl font-bold text-foreground">{collection.words[selectedWordIndex]}</p>
           </div>
 
@@ -296,16 +302,16 @@ export function Recorder({
             {currentWordStartMs === null ? (
               <Button size="lg" onClick={markStart} className="min-w-[160px] gap-2">
                 <Play className="size-5" />
-                Mark Start
+                {t("recorder.markStart")}
               </Button>
             ) : (
               <>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  Started at {formatDuration(currentWordStartMs)}
+                  {t("recorder.startedAt", { time: formatDuration(currentWordStartMs) })}
                 </div>
                 <Button size="lg" onClick={markEnd} className="min-w-[160px] gap-2">
                   <Square className="size-5" />
-                  Mark End
+                  {t("recorder.markEnd")}
                 </Button>
               </>
             )}
@@ -317,7 +323,7 @@ export function Recorder({
 
       {selectedWordIndex === null ? (
         <div className="space-y-4 rounded-lg border border-dashed bg-muted/30 p-6 text-center">
-          <p className="text-muted-foreground">Select a word to start marking</p>
+          <p className="text-muted-foreground">{t("recorder.selectWordToStart")}</p>
           <WordModal
             collection={collection}
             timestamps={timestamps}
@@ -343,10 +349,10 @@ export function Recorder({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Mic className="size-5" />
-          Record Words
+          {t("recorder.cardTitle")}
         </CardTitle>
         <CardDescription>
-          Start recording, pick a word from the list, then mark the start and end of each pronunciation.
+          {t("recorder.cardDescription")}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -355,7 +361,7 @@ export function Recorder({
           {!isRecording ? (
             <Button size="lg" onClick={startRecording} disabled={!isSupported || isSaving} className="gap-2">
               <Mic className="size-5" />
-              Start Recording
+              {t("recorder.startRecording")}
             </Button>
           ) : (
             <>
@@ -365,7 +371,7 @@ export function Recorder({
               </div>
               <Button size="lg" variant="destructive" onClick={stopRecording} className="gap-2">
                 <Square className="size-5" />
-                Stop & Save
+                {t("recorder.stopAndSave")}
               </Button>
             </>
           )}

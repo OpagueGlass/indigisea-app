@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Collection, Recording, removeRecording, updateCollection } from "@/lib/db"
 import { extensionFor, formatBytes, formatDuration } from "@/lib/utils"
 import { Download, FileJson, Mic, MoreVertical, Play, Trash2 } from "lucide-react"
+import { useTranslations } from "next-intl"
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
 import {
@@ -31,6 +32,8 @@ export function Player({
   loadRecordings: () => Promise<void>
   setSelectedCollection: (collection: Collection) => void
 }) {
+  const t = useTranslations()
+
   const [recordingUrls, setRecordingUrls] = useState<Record<string, string>>({})
   const [metadata, setMetadata] = useState<Record<string, string>>({})
   const [selectedRecording, setSelectedRecording] = useState<Recording | null>(null)
@@ -93,7 +96,7 @@ export function Player({
         setSelectedRecording(null)
       }
     } catch (error) {
-      toast.error("Could not delete recording: " + (error as Error).message)
+      toast.error(t("errors.couldNotDeleteRecording", { message: (error as Error).message }))
     }
   }
 
@@ -104,13 +107,15 @@ export function Player({
 
   return (
     <section className="space-y-4">
-      <h2 className="text-sm font-semibold tracking-widest text-muted-foreground uppercase">Saved Recordings</h2>
+      <h2 className="text-sm font-semibold tracking-widest text-muted-foreground uppercase">
+        {t("player.sectionTitle")}
+      </h2>
 
       {recordings.length === 0 ? (
         <Card className="border-dashed">
           <CardContent className="flex flex-col items-center justify-center py-8 text-center">
             <Mic className="mb-3 size-8 text-muted-foreground/50" />
-            <p className="text-muted-foreground">No recordings yet. Start recording to create one.</p>
+            <p className="text-muted-foreground">{t("player.empty")}</p>
           </CardContent>
         </Card>
       ) : (
@@ -129,36 +134,41 @@ export function Player({
                       className="text-left transition-opacity hover:opacity-80"
                     >
                       <CardTitle className="text-base">
-                        {new Date(recording.createdAt).toLocaleString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                          day: "2-digit",
-                          month: "2-digit",
-                          year: "numeric",
-                        })}
+                        {new Date(recording.createdAt)
+                          .toLocaleString("en-MY", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                          })
+                          .toLocaleUpperCase()}
                       </CardTitle>
                       <CardDescription>
-                        {formatDuration(recording.durationMs)} - {formatBytes(recording.size)} -{" "}
-                        {new Set(recording.timestamps.map((t) => t.wordId)).size} words marked
+                        {t("recordings.summaryLine", {
+                          duration: formatDuration(recording.durationMs),
+                          size: formatBytes(recording.size),
+                          count: new Set(recording.timestamps.map((t) => t.wordId)).size,
+                        })}
                       </CardDescription>
                     </button>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="sm" className="size-8 p-0">
                           <MoreVertical className="size-4" />
-                          <span className="sr-only">Open menu</span>
+                          <span className="sr-only">{t("common.openMenuSrOnly")}</span>
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-full">
                         <DropdownMenuItem onClick={() => openPlaybackModal(recording)}>
                           <Play className="size-4" />
-                          Play
+                          {t("common.play")}
                         </DropdownMenuItem>
                         {metadataUrl && (
                           <DropdownMenuItem asChild>
                             <a href={metadataUrl} download={`${filename}.json`}>
                               <FileJson className="size-4" />
-                              Export Metadata
+                              {t("common.exportMetadata")}
                             </a>
                           </DropdownMenuItem>
                         )}
@@ -166,14 +176,14 @@ export function Player({
                           <DropdownMenuItem asChild>
                             <a href={src} download={`${filename}.${extensionFor(recording.mimeType)}`}>
                               <Download className="size-4" />
-                              Download Audio
+                              {t("common.downloadAudio")}
                             </a>
                           </DropdownMenuItem>
                         )}
 
                         <DropdownMenuItem variant="destructive" onClick={() => setDeleteConfirmId(recording.id)}>
                           <Trash2 className="size-4" />
-                          Delete
+                          {t("common.delete")}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -196,13 +206,11 @@ export function Player({
       <AlertDialog open={deleteConfirmId !== null} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Recording</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this recording? This action cannot be undone.
-            </AlertDialogDescription>
+            <AlertDialogTitle>{t("player.deleteRecordingTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("player.deleteRecordingDescription")}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 if (deleteConfirmId) {
@@ -212,7 +220,7 @@ export function Player({
               }}
               variant="destructive"
             >
-              Delete
+              {t("common.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

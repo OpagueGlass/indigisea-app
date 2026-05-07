@@ -1,4 +1,5 @@
 import withSerwistInit from "@serwist/next";
+import createNextIntlPlugin from "next-intl/plugin";
 
 const withSerwist = withSerwistInit({
 	swSrc: "app/sw.ts",
@@ -8,9 +9,11 @@ const withSerwist = withSerwistInit({
 	disable: process.env.NODE_ENV === "development",
 });
 
+const withNextIntl = createNextIntlPlugin();
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
 	reactStrictMode: true,
 };
 
-export default withSerwist(nextConfig);
+export default withNextIntl(withSerwist(nextConfig));
