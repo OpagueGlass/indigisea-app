@@ -20,30 +20,12 @@ function isSupportedLocale(value: unknown): value is SupportedLocale {
 	return supportedLocales.includes(value as SupportedLocale)
 }
 
-function getCookieValue(name: string): string | null {
-	const parts = document.cookie.split(";")
-	for (const part of parts) {
-		const [key, ...rest] = part.trim().split("=")
-		if (key === name) {
-			return decodeURIComponent(rest.join("="))
-		}
-	}
-	return null
-}
-
 function readPreferredLocale(fallback: SupportedLocale): SupportedLocale {
 	try {
 		const stored = localStorage.getItem("locale")
 		if (isSupportedLocale(stored)) return stored
-	} catch {
-		// ignore
-	}
-
-	try {
-		const fromCookie = getCookieValue("locale")
-		if (isSupportedLocale(fromCookie)) return fromCookie
-	} catch {
-		// ignore
+	} catch (e) {
+		console.error("Failed to read preferred locale from localStorage", e)
 	}
 
 	return fallback
@@ -72,19 +54,16 @@ export function I18nProvider({
 	useEffect(() => {
 		try {
 			localStorage.setItem("locale", locale)
-		} catch {
-      // ignore
-    }
-
-		document.cookie = `locale=${encodeURIComponent(locale)}; path=/; max-age=31536000; samesite=lax`
-		document.documentElement.lang = locale
+		} catch (e) {
+			console.error("Failed to set preferred locale in localStorage", e)
+		}
 	}, [locale])
 
 	const value = useMemo(() => ({ locale, setLocale }), [locale])
 
 	return (
 		<LocaleContext.Provider value={value}>
-			<NextIntlClientProvider locale={locale} messages={getMessages(locale)}>
+			<NextIntlClientProvider locale={locale} messages={getMessages(locale)} timeZone="Asia/Kuala_Lumpur">
 				{children}
 			</NextIntlClientProvider>
 		</LocaleContext.Provider>
