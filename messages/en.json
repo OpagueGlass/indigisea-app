@@ -24,7 +24,10 @@
         "micDeniedOrUnavailable": "Microphone access was denied or unavailable: {message}"
     },
     "success": {
-        "collectionCreated": "Collection created successfully."
+        "collectionCreated": "Collection created successfully.",
+        "collectionDeleted": "Collection deleted successfully.",
+        "recordingSaved": "Recording saved successfully.",
+        "recordingDeleted": "Recording deleted successfully."
     },
     "validation": {
         "enterCollectionName": "Please enter a collection name.",

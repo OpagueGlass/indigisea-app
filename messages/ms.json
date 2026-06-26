@@ -24,7 +24,10 @@
         "micDeniedOrUnavailable": "Akses mikrofon ditolak atau tidak tersedia: {message}"
     },
     "success": {
-        "collectionCreated": "Koleksi berjaya dicipta."
+        "collectionCreated": "Koleksi berjaya dicipta.",
+        "collectionDeleted": "Koleksi berjaya dipadam.",
+        "recordingSaved": "Rakaman berjaya disimpan.",
+        "recordingDeleted": "Rakaman berjaya dipadam."
     },
     "validation": {
         "enterCollectionName": "Sila masukkan nama koleksi.",
