@@ -1,8 +1,8 @@
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Recording } from "@/lib/db"
 import { formatBytes, formatDuration } from "@/lib/utils"
 import { useTranslations } from "next-intl"
 import { useRef, useState } from "react"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../ui/dialog"
 
 export default function PlaybackModal({
   isPlaybackModalOpen,

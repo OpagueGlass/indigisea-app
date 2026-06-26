@@ -1,37 +1,47 @@
 "use client"
 
+import WordModal from "@/components/audio/word-modal"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Progress } from "@/components/ui/progress"
-import { Collection, addRecording, Timestamp, updateCollection } from "@/lib/db"
+import { addRecording, Collection, Recording, Timestamp, updateCollection } from "@/lib/db"
 import { formatDuration } from "@/lib/utils"
 import { Check, Mic, Play, Square } from "lucide-react"
-import { useEffect, useRef, useState } from "react"
 import { useTranslations } from "next-intl"
-import { toast } from "sonner"
-import { Input } from "../ui/input"
-import { Label } from "../ui/label"
-import WordModal from "./word-modal"
+import { Dispatch, RefObject, SetStateAction, useEffect, useRef, useState } from "react"
+
+interface RecorderProps {
+  collection: Collection
+  streamRef: RefObject<MediaStream | null>
+  mediaRecorderRef: RefObject<MediaRecorder | null>
+  isSupported: boolean
+  setRecordings: Dispatch<SetStateAction<Recording[]>>
+  cleanupStream: () => void
+  showError: (key: string, values?: Record<string, string>) => void
+  showSuccess: (key: string, values?: Record<string, string>) => void
+  t: ReturnType<typeof useTranslations>
+}
 
 const preferredTypes = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4"]
 
+/**
+ * Recorder component allows users to record audio for a specific collection of texts. It provides recording controls
+ * to marking timestamps for individual texts within the collection, and saves the recordings along with their
+ * timestamps.
+ */
 export function Recorder({
   collection,
   mediaRecorderRef,
-  loadRecordings,
+  setRecordings,
   cleanupStream,
   streamRef,
   isSupported,
-}: {
-  collection: Collection
-  streamRef: React.RefObject<MediaStream | null>
-  mediaRecorderRef: React.RefObject<MediaRecorder | null>
-  isSupported: boolean
-  loadRecordings: () => Promise<void>
-  cleanupStream: () => void
-}) {
-  const t = useTranslations()
-
+  showError,
+  showSuccess,
+  t,
+}: RecorderProps) {
   const chunksRef = useRef<BlobPart[]>([])
   const recordingStartRef = useRef<number>(0)
   const timestampsRef = useRef<Map<number, Timestamp[]>>(new Map())
@@ -45,7 +55,7 @@ export function Recorder({
   const [recordedWord, setRecordedWord] = useState<string>("")
   const [wordEndMarked, setWordEndMarked] = useState(false)
 
-  // Set to default state when recording stops or is cancelled
+  // Set to default state when recording stops or is cancelled (when the user navigates back)
   const resetRecordingState = () => {
     chunksRef.current = []
     timestampsRef.current = new Map()
@@ -53,6 +63,7 @@ export function Recorder({
     setTimestamps(new Map())
   }
 
+  // Saves the recorded audio and timestamps to the local database, and updates the collection's wordRecorded state.
   const saveRecording = async () => {
     try {
       const durationMs = Date.now() - recordingStartRef.current
@@ -65,11 +76,13 @@ export function Recorder({
         throw new Error(t("recorder.recordingEmpty"))
       }
 
+      // Sort timestamps by id and flatten the timestamps of each text into a single array.
       const timestampsArray = Array.from(timestampsRef.current.entries())
         .sort((a, b) => a[0] - b[0])
         .map(([_, timestamp]) => timestamp)
         .flat()
 
+      // Update the collection's wordRecorded boolean array to mark words that have been recorded.
       const recordedWords = collection.wordRecorded
       for (const index of timestampsRef.current.keys()) {
         recordedWords[index] = true
@@ -93,14 +106,16 @@ export function Recorder({
 
       await addRecording(newRecording)
       await updateCollection(newCollection)
-      await loadRecordings()
+      setRecordings((prev) => [newRecording, ...prev])
+      showSuccess("success.recordingSaved")
     } catch (error) {
-      toast.error(t("errors.couldNotSaveRecording", { message: (error as Error).message }))
+      showError("errors.couldNotSaveRecording", { message: (error as Error).message })
     }
     setIsSaving(false)
     cleanupStream()
   }
 
+  // Starts recording audio from the user's microphone with the MediaRecorder API
   const startRecording = async () => {
     if (!isSupported || isRecording || isSaving) return
 
@@ -133,10 +148,11 @@ export function Recorder({
       setIsRecording(true)
     } catch (error) {
       cleanupStream()
-      toast.error(t("errors.micDeniedOrUnavailable", { message: (error as Error).message }))
+      showError("errors.micDeniedOrUnavailable", { message: (error as Error).message })
     }
   }
 
+  // Stops and saves the recording
   const stopRecording = () => {
     const mediaRecorder = mediaRecorderRef.current
     if (!mediaRecorder || mediaRecorder.state !== "recording") return
@@ -144,11 +160,12 @@ export function Recorder({
     mediaRecorder.stop()
   }
 
+  // Selects a text from the collection to mark timestamps for.
   const selectWord = (index: number) => {
     if (!isRecording) return
 
-    // End the current word if one is active before selecting a new word to mark.
     if (currentWordStartMs !== null && selectedWordIndex !== null) {
+      // End the current text if one is active before selecting a new text to mark.
       markEnd()
       if (recordedWord.trim() !== "") {
         setSelectedWordIndex(index)
@@ -163,12 +180,14 @@ export function Recorder({
       setWordEndMarked(false)
 
       if (timestamps.has(index)) {
+        // Use the last recorded word for the selected text if it has been marked before, to allow the user to edit it.
         const timestamp = timestamps.get(index)!
         setRecordedWord(timestamp[timestamp.length - 1].recordedWord)
       }
     }
   }
 
+  // Marks the start time for the currently selected text, allowing the user to mark the end time later.
   const markStart = () => {
     if (!isRecording || selectedWordIndex === null) return
     const startMs = Date.now() - recordingStartRef.current
@@ -176,11 +195,12 @@ export function Recorder({
     setCurrentWordStartMs(startMs)
   }
 
+  // Marks the end time for the currently selected text
   const markEnd = () => {
     if (!isRecording || selectedWordIndex === null || currentWordStartMs === null) return
 
     if (recordedWord.trim() === "" && !collection.translatedWords) {
-      toast.error(t("validation.enterWordBeforeEndTime"))
+      showError("validation.enterWordBeforeEndTime")
       return
     }
 
@@ -196,8 +216,9 @@ export function Recorder({
       endMs,
       recordedWord: collection.translatedWords ? collection.translatedWords[selectedWordIndex] : recordedWord.trim(),
     }
-    
+
     setTimestamps((prev) => {
+      // Update the timestamps map with the new timestamp for the selected text, keeping previously marked timestamps
       const next = new Map(prev)
       const pastTimestamps = next.get(selectedWordIndex)
 
@@ -206,6 +227,7 @@ export function Recorder({
       } else {
         next.set(selectedWordIndex, [...pastTimestamps, timestamp])
       }
+
       timestampsRef.current = next
       return next
     })
@@ -213,6 +235,7 @@ export function Recorder({
     setWordEndMarked(true)
   }
 
+  // Updates the active recording duration every 50ms while recording, and resets it when recording stops.
   useEffect(() => {
     if (!isRecording) {
       setActiveDurationMs(0)
@@ -231,6 +254,7 @@ export function Recorder({
   const markedCount = timestamps.size
   const progress = isRecording ? (markedCount / collection.words.length) * 100 : 0
 
+  // Displays the recorded duration for a specific text, showing the start and end times of the last marked timestamp.
   const recordedDuration = (wordIndex: number) => {
     const pastTimestamps = timestamps.get(wordIndex)!
     const lastTimestamp = pastTimestamps[pastTimestamps.length - 1]
@@ -246,18 +270,22 @@ export function Recorder({
     )
   }
 
+  // Displays the input field for transcript collections, or the translated word for audio collections based on the
+  // selected text index.
   const recorderWordInput = (selectedWordIndex: number | null) => {
     if (selectedWordIndex === null) return null
 
     if (collection.translatedWords) {
-      // audio types will use the translated word
+      // Audio types will use the translated word
       const originalTranslation = collection.translatedWords[selectedWordIndex]
-      return <>
-        <p className="mb-2 text-sm text-muted-foreground">{t("recorder.translatedWordLabel")}</p>
-        <p className="text-3xl font-bold text-foreground">{originalTranslation}</p>
-      </>
+      return (
+        <>
+          <p className="mb-2 text-sm text-muted-foreground">{t("recorder.translatedWordLabel")}</p>
+          <p className="text-3xl font-bold text-foreground">{originalTranslation}</p>
+        </>
+      )
     }
-    
+
     // Only allow input for transcript collections
     return (
       <>
@@ -275,6 +303,7 @@ export function Recorder({
     )
   }
 
+  // Displays the recording interface, including progress, current text controls, and the word selection modal.
   const recording = (
     <>
       {/* Progress */}
@@ -321,6 +350,7 @@ export function Recorder({
         </div>
       )}
 
+      {/* Hint and Word Selection Modal */}
       {selectedWordIndex === null ? (
         <div className="space-y-4 rounded-lg border border-dashed bg-muted/30 p-6 text-center">
           <p className="text-muted-foreground">{t("recorder.selectWordToStart")}</p>
@@ -351,9 +381,7 @@ export function Recorder({
           <Mic className="size-5" />
           {t("recorder.cardTitle")}
         </CardTitle>
-        <CardDescription>
-          {t("recorder.cardDescription")}
-        </CardDescription>
+        <CardDescription>{t("recorder.cardDescription")}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Start/Stop Recording */}
@@ -376,7 +404,7 @@ export function Recorder({
             </>
           )}
         </div>
-
+        {/* Only show recording controls when recording */}
         {isRecording && recording}
       </CardContent>
     </Card>

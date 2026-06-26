@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 
+/**
+ * Default offline page 
+ */
 export default function OfflinePage() {
   const t = useTranslations()
 

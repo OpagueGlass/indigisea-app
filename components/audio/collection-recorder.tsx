@@ -6,38 +6,52 @@ import { Collection, Recording, getRecordings } from "@/lib/db"
 import { ArrowLeft } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { useEffect, useRef, useState } from "react"
-import { toast } from "sonner"
 import { Player } from "./player"
 
 interface CollectionRecorderProps {
   collection: Collection
   setSelectedCollection: (collection: Collection) => void
   onBack: () => void
+  showError: (key: string, values?: Record<string, string>) => void
+  showSuccess: (key: string, values?: Record<string, string>) => void
+  t: ReturnType<typeof useTranslations>
 }
 
-export function CollectionRecorder({ collection, setSelectedCollection, onBack }: CollectionRecorderProps) {
-  const t = useTranslations()
-
+/**
+ * CollectionRecorder component allows users to record audio for a specific collection of texts. It provides
+ * recording controls and displays saved recordings for playback.
+ */
+export function CollectionRecorder({
+  collection,
+  setSelectedCollection,
+  onBack,
+  showError,
+  showSuccess,
+  t,
+}: CollectionRecorderProps) {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
 
   const [recordings, setRecordings] = useState<Recording[]>([])
   const [isSupported, setIsSupported] = useState(false)
 
+  // Cleanup function to stop all tracks of the media stream and reset the stream reference
   const cleanupStream = () => {
     streamRef.current?.getTracks().forEach((track) => track.stop())
     streamRef.current = null
   }
 
+  // Load recordings for the current collection from the local database
   const loadRecordings = async () => {
     try {
       const recordings = await getRecordings(collection.id)
       setRecordings(recordings)
     } catch (error) {
-      toast.error(t("errors.couldNotLoadRecordings", { message: (error as Error).message }))
+      showError("errors.couldNotLoadRecordings", { message: (error as Error).message })
     }
   }
 
+  // Checks browser support for media devices and MediaRecorder API, loads recordings, and sets up cleanup on unmount
   useEffect(() => {
     setIsSupported(
       typeof window !== "undefined" && "mediaDevices" in navigator && typeof window.MediaRecorder !== "undefined"
@@ -84,16 +98,22 @@ export function CollectionRecorder({ collection, setSelectedCollection, onBack }
           streamRef={streamRef}
           mediaRecorderRef={mediaRecorderRef}
           isSupported={isSupported}
-          loadRecordings={loadRecordings}
+          setRecordings={setRecordings}
           cleanupStream={cleanupStream}
+          showError={showError}
+          showSuccess={showSuccess}
+          t={t}
         />
 
         {/* Saved Recordings */}
         <Player
           recordings={recordings}
           collection={collection}
-          loadRecordings={loadRecordings}
+          setRecordings={setRecordings}
           setSelectedCollection={setSelectedCollection}
+          showError={showError}
+          showSuccess={showSuccess}
+          t={t}
         />
       </div>
     </main>

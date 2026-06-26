@@ -1,13 +1,6 @@
 "use client"
 
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Collection, Recording, removeRecording, updateCollection } from "@/lib/db"
-import { extensionFor, formatBytes, formatDuration } from "@/lib/utils"
-import { Download, FileJson, Mic, MoreVertical, Play, Trash2 } from "lucide-react"
-import { useTranslations } from "next-intl"
-import { useEffect, useState } from "react"
-import { toast } from "sonner"
+import PlaybackModal from "@/components/audio/playback-modal"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,23 +10,35 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "../ui/alert-dialog"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu"
-import PlaybackModal from "./playback-modal"
+} from "@/components/ui/alert-dialog"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Collection, Recording, removeRecording, updateCollection } from "@/lib/db"
+import { extensionFor, formatBytes, formatDuration } from "@/lib/utils"
+import { Download, FileJson, Mic, MoreVertical, Play, Trash2 } from "lucide-react"
+import { useTranslations } from "next-intl"
+import { useEffect, useState } from "react"
+
+interface PlayerProps {
+  recordings: Recording[]
+  collection: Collection
+  setRecordings: (recordings: Recording[]) => void
+  setSelectedCollection: (collection: Collection) => void
+  showError: (key: string, values?: Record<string, string>) => void
+  showSuccess: (key: string, values?: Record<string, string>) => void
+  t: ReturnType<typeof useTranslations>
+}
 
 export function Player({
   recordings,
   collection,
-  loadRecordings,
+  setRecordings,
   setSelectedCollection,
-}: {
-  recordings: Recording[]
-  collection: Collection
-  loadRecordings: () => Promise<void>
-  setSelectedCollection: (collection: Collection) => void
-}) {
-  const t = useTranslations()
-
+  showError,
+  showSuccess,
+  t,
+}: PlayerProps) {
   const [recordingUrls, setRecordingUrls] = useState<Record<string, string>>({})
   const [metadata, setMetadata] = useState<Record<string, string>>({})
   const [selectedRecording, setSelectedRecording] = useState<Recording | null>(null)
@@ -91,12 +96,13 @@ export function Player({
 
       await updateCollection(newCollection)
       setSelectedCollection(newCollection)
-      await loadRecordings()
+      setRecordings(remainingRecordings)
       if (selectedRecording?.id === id) {
         setSelectedRecording(null)
       }
+      showSuccess("success.recordingDeleted")
     } catch (error) {
-      toast.error(t("errors.couldNotDeleteRecording", { message: (error as Error).message }))
+      showError("errors.couldNotDeleteRecording", { message: (error as Error).message })
     }
   }
 

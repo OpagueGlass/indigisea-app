@@ -16,8 +16,8 @@ import { useTranslations } from "next-intl"
 import { useTheme } from "next-themes"
 
 export function SettingsDropdown() {
-  const { theme, setTheme } = useTheme()
   const t = useTranslations()
+  const { theme, setTheme } = useTheme()
   const { locale, setLocale } = useAppLocale()
 
   const themes = [

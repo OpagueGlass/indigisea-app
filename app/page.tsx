@@ -31,55 +31,74 @@ import { addCollection, Collection, getCollections, removeCollection } from "@/l
 import { collectionTypes, CollectionTypeValue, parseCSVFile, Word } from "@/lib/parse-csv"
 import { FolderOpen, Mic, Plus, Trash2, Upload } from "lucide-react"
 import { useTranslations } from "next-intl"
-import { useEffect, useState } from "react"
+import { Dispatch, SetStateAction, useEffect, useState } from "react"
 import { toast } from "sonner"
 
-export default function Page() {
-  const t = useTranslations()
+type Translator = ReturnType<typeof useTranslations>
 
-  const [collections, setCollections] = useState<Collection[]>([])
-  const [selectedCollection, setSelectedCollection] = useState<Collection | null>(null)
+// Handles errors and success messages by displaying a toast notification with the translated message.
+const onError = (t: Translator) => (key: string, values?: Record<string, string>) => toast.error(t(key, values))
+const onSuccess = (t: Translator) => (key: string, values?: Record<string, string>) => toast.success(t(key, values))
+
+/**
+ * Dialog for creating a new collection. The user inputs a collection name, selects a collection type
+ * (transcript or audio-only), and uploads a CSV file containing words/sentences for the collection.
+ * @param setCollections Function to update the list of collections after a new collection is created.
+ * @param t The translator function from next-intl for translations.
+ * @returns A JSX element representing the create collection dialog.
+ */
+function CreateCollectionDialog({
+  setCollections,
+  t,
+  showError,
+  showSuccess,
+}: {
+  setCollections: Dispatch<SetStateAction<Collection[]>>
+  t: Translator
+  showError: (key: string, values?: Record<string, string>) => void
+  showSuccess: (key: string, values?: Record<string, string>) => void
+}) {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
-  const [newCollectionName, setNewCollectionName] = useState("")
-  const [words, setWords] = useState<Word[]>([])
-  const [loading, setLoading] = useState(false)
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
-  const [collectionToDelete, setCollectionToDelete] = useState<Collection | null>(null)
-  const [selectedCollectionType, setSelectedCollectionType] = useState<CollectionTypeValue>(collectionTypes[0].value)
+  const [name, setName] = useState("")
+  const [collectionType, setCollectionType] = useState<CollectionTypeValue>(collectionTypes[0].value)
   const [file, setFile] = useState<File | null>(null)
+  const [words, setWords] = useState<Word[]>([])
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  // Resets the dialog state, toggling the dialog and clearing the uploaded words and selected file while retaining
+  // the collection name and type.
+  const resetDialogState = (value: boolean) => {
+    setIsCreateDialogOpen(value)
     setWords([])
+    setFile(null)
+  }
+
+  // Loads the selected CSV file and creates a collection based on the selected collection type
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setWords([]) // Clear previously loaded words when a new file is selected
     const file = event.target.files?.[0]
     if (!file) return
     setFile(file)
-    parseCSVFile(file, setWords, selectedCollectionType, t)
+    parseCSVFile(file, collectionType, setWords, showError)
   }
 
+  // Updates the collection type and reloads the selected CSV file if it has already been uploaded
   const setType = (value: CollectionTypeValue) => {
-    setSelectedCollectionType(value)
-    setWords([])
+    setCollectionType(value)
+    setWords([]) // Clear previously loaded words when a new type is selected
     if (file) {
-      parseCSVFile(file, setWords, value, t)
+      parseCSVFile(file, value, setWords, showError)
     }
   }
 
-  const loadCollections = async () => {
-    try {
-      const collections = await getCollections()
-      setCollections(collections)
-    } catch (error) {
-      toast.error(t("errors.couldNotLoadCollections", { message: (error as Error).message }))
-    }
-  }
-
+  // Creates a new collection in the local database and updates the user's collections
   const createCollection = async () => {
-    if (!newCollectionName.trim()) {
-      toast.error(t("validation.enterCollectionName"))
+    if (!name.trim()) {
+      showError("validation.enterCollectionName")
       return
     }
+
     if (words.length === 0) {
-      toast.error(t("validation.uploadCsvFirst"))
+      showError("validation.uploadCsvFirst")
       return
     }
 
@@ -87,36 +106,27 @@ export default function Page() {
       // Only audio collections have translated words
       const newCollection = {
         id: crypto.randomUUID(),
-        name: newCollectionName.trim(),
+        name: name.trim(),
         wordIds: words.map((word) => word.id),
         words: words.map((word) => word.word),
         wordRecorded: words.map((_) => false),
         createdAt: new Date(),
-        translatedWords: selectedCollectionType === "audio" ? words.map((word) => word.translatedWord!) : null,
+        translatedWords: collectionType === "audio" ? words.map((word) => word.translatedWord!) : null,
       }
 
       await addCollection(newCollection)
-      await loadCollections()
+      setCollections((prevCollections) => [newCollection, ...prevCollections]) // Prepend to start to maintain order
 
-      setIsCreateDialogOpen(false)
-      setNewCollectionName("")
-      setWords([])
-      setFile(null)
-      toast.success(t("success.collectionCreated"))
+      // Reset the dialog state after successful creation
+      setName("")
+      resetDialogState(false)
+      showSuccess("success.collectionCreated")
     } catch (error) {
-      toast.error(t("errors.couldNotCreateCollection", { message: (error as Error).message }))
+      showError("errors.couldNotCreateCollection", { message: (error as Error).message })
     }
   }
 
-  const deleteCollection = async (id: string) => {
-    try {
-      await removeCollection(id)
-      await loadCollections()
-    } catch (error) {
-      toast.error(t("errors.couldNotDeleteCollection", { message: (error as Error).message }))
-    }
-  }
-
+  // Formats a preview of the uploaded words, showing the count and the first three words of the first three sentences
   const formatPreview = (words: Word[]) => {
     const previewWords = words.slice(0, 3).map((word) => word.word)
     const previewSentences = previewWords.map((sentence) => {
@@ -130,21 +140,200 @@ export default function Page() {
     return t("home.previewWordsLoaded", { count: words.length, preview })
   }
 
+  return (
+    <Dialog open={isCreateDialogOpen} onOpenChange={resetDialogState}>
+      <DialogTrigger asChild>
+        <Button size="lg" className="h-10 w-full gap-2 p-4 md:w-fit">
+          <Plus className="size-4" />
+          {t("home.createCollectionButton")}
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{t("home.createDialogTitle")}</DialogTitle>
+          <DialogDescription>{t("home.createDialogDescription")}</DialogDescription>
+        </DialogHeader>
+        <FieldGroup>
+          <Field>
+            <FieldLabel htmlFor="collection-name">{t("home.collectionNameLabel")}</FieldLabel>
+            <Input
+              id="collection-name"
+              placeholder={t("home.collectionNamePlaceholder")}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="collection-type">{t("home.collectionTypeLabel")}</FieldLabel>
+            <Select onValueChange={(value) => setType(value as CollectionTypeValue)} defaultValue={collectionType}>
+              <SelectTrigger id="collection-type" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {collectionTypes.map((type) => (
+                  <SelectItem key={type.value} value={type.value}>
+                    {t(type.labelKey)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="csv-upload">{t("home.uploadWordListLabel")}</FieldLabel>
+            <Input
+              id="csv-upload"
+              type="file"
+              accept=".csv,.txt"
+              onChange={handleFileUpload}
+              className="cursor-pointer"
+            />
+            <FieldDescription>
+              {words.length > 0 ? formatPreview(words) : t("home.uploadWordListHelperEmpty")}
+            </FieldDescription>
+          </Field>
+        </FieldGroup>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+            {t("common.cancel")}
+          </Button>
+          <Button onClick={createCollection} disabled={!name.trim() || words.length === 0}>
+            {t("home.createCollectionButton")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+/**
+ * Shows the card for a single collection with options to open or delete it.
+ *
+ * @param collection The collection to display in the card.
+ * @param onOpen Callback function to open the collection.
+ * @param onDelete Callback function to delete the collection.
+ * @param t The translator function from next-intl for translations.
+ * @returns A JSX element representing the collection card.
+ */
+function CollectionCard({
+  collection,
+  onOpen,
+  onDelete,
+  t,
+}: {
+  collection: Collection
+  onOpen: () => void
+  onDelete: () => void
+  t: ReturnType<typeof useTranslations>
+}) {
+  return (
+    <Card key={collection.id} className="group relative gap-2">
+      <CardHeader>
+        <div className="flex justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+              <FolderOpen className="size-6 text-primary" />
+            </div>
+            <div className="min-w-0">
+              <CardTitle className="truncate text-base">{collection.name}</CardTitle>
+              <CardDescription className="text-xs">
+                {new Date(collection.createdAt).toLocaleDateString("en-MY")}
+              </CardDescription>
+            </div>
+          </div>
+          <Badge variant="secondary" className="h-7 px-2.5">
+            {collection.translatedWords ? t("home.badgeAudioOnly") : t("home.badgeTranscript")}
+          </Badge>
+        </div>
+      </CardHeader>
+      <CardContent className="mb-1">
+        <p>{t("home.collectionCardWordCount", { count: collection.words.length })}</p>
+        <p className="line-clamp-2 truncate text-sm text-muted-foreground">
+          {collection.words.slice(0, 3).join(", ")}
+          {collection.words.length > 3 && "..."}
+        </p>
+      </CardContent>
+      <CardFooter className="gap-2 border-t">
+        <Button className="flex-1 gap-2" onClick={onOpen}>
+          <Mic className="size-4" />
+          {t("home.openAndRecord")}
+        </Button>
+        <Button variant="outline" className="text-destructive hover:bg-destructive hover:text-white" onClick={onDelete}>
+          <Trash2 className="size-4" />
+        </Button>
+      </CardFooter>
+    </Card>
+  )
+}
+
+/**
+ * Home page of the Single Page Application (SPA) which switches between views based on the state of the application.
+ *
+ * - The main view displays the user's collections with options to create new collections or delete existing ones.
+ * - When a collection is selected, the view switches to the CollectionRecorder component to record words and manage
+ * recordings for the selected collection.
+ **/
+export default function Page() {
+  // Hook to handle switching between English and Malay translations
+  const t = useTranslations()
+
+  const [collections, setCollections] = useState<Collection[]>([])
+  const [selectedCollection, setSelectedCollection] = useState<Collection | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [collectionToDelete, setCollectionToDelete] = useState<Collection | null>(null)
+
+  const showError = onError(t)
+  const showSuccess = onSuccess(t)
+
+  // Loads the user's collections from the local database
+  const loadCollections = async () => {
+    try {
+      const collections = await getCollections()
+      setCollections(collections)
+    } catch (error) {
+      showError("errors.couldNotLoadCollections", { message: (error as Error).message })
+    }
+  }
+
+  // Deletes a collection from the local database and updates the user's collections
+  const deleteCollection = async (id: string) => {
+    try {
+      await removeCollection(id)
+      setCollections((prevCollections) => prevCollections.filter((collection) => collection.id !== id))
+      showSuccess("success.collectionDeleted")
+    } catch (error) {
+      showError("errors.couldNotDeleteCollection", { message: (error as Error).message })
+    }
+  }
+
+  // Load the user's collections when the component mounts
   useEffect(() => {
     setLoading(true)
     loadCollections()
   }, [])
 
+  // Show the CollectionRecorder component if a collection is selected
   if (selectedCollection) {
     return (
       <CollectionRecorder
         collection={selectedCollection}
         setSelectedCollection={setSelectedCollection}
-        onBack={() => setSelectedCollection(null)}
+        onBack={() => {
+          setCollections((prevCollections) =>
+            // Update the selected collection in collections
+            prevCollections.map((collection) =>
+              collection.id === selectedCollection.id ? selectedCollection : collection
+            )
+          )
+          setSelectedCollection(null)
+        }}
+        showError={showError}
+        showSuccess={showSuccess}
+        t={t}
       />
     )
   }
 
+  // Otherwise, show the main view with the user's collections and options to create or delete collections
   return (
     <div className="mx-auto flex min-h-svh w-full max-w-4xl flex-col gap-6 bg-background px-4 py-8">
       <header className="space-y-2">
@@ -155,83 +344,12 @@ export default function Page() {
             </p>
             <h1 className="text-3xl font-semibold tracking-tight text-foreground">{t("home.headerTitle")}</h1>
           </div>
+          {/* Settings Dropdown for switching languages and themes */}
           <SettingsDropdown />
         </div>
         <p className="max-w-2xl text-sm text-muted-foreground">{t("home.headerDescription")}</p>
       </header>
-
-      <Dialog
-        open={isCreateDialogOpen}
-        onOpenChange={(value) => {
-          setIsCreateDialogOpen(value)
-          setWords([])
-          setFile(null)
-        }}
-      >
-        <DialogTrigger asChild>
-          <Button size="lg" className="h-10 w-full gap-2 p-4 md:w-fit">
-            <Plus className="size-4" />
-            {t("home.createCollectionButton")}
-          </Button>
-        </DialogTrigger>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t("home.createDialogTitle")}</DialogTitle>
-            <DialogDescription>{t("home.createDialogDescription")}</DialogDescription>
-          </DialogHeader>
-          <FieldGroup>
-            <Field>
-              <FieldLabel htmlFor="collection-name">{t("home.collectionNameLabel")}</FieldLabel>
-              <Input
-                id="collection-name"
-                placeholder={t("home.collectionNamePlaceholder")}
-                value={newCollectionName}
-                onChange={(e) => setNewCollectionName(e.target.value)}
-              />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="collection-type">{t("home.collectionTypeLabel")}</FieldLabel>
-              <Select
-                onValueChange={(value) => setType(value as CollectionTypeValue)}
-                defaultValue={selectedCollectionType}
-              >
-                <SelectTrigger id="collection-type" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {collectionTypes.map((type) => (
-                    <SelectItem key={type.value} value={type.value}>
-                      {t(type.labelKey)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="csv-upload">{t("home.uploadWordListLabel")}</FieldLabel>
-              <Input
-                id="csv-upload"
-                type="file"
-                accept=".csv,.txt"
-                onChange={handleFileUpload}
-                className="cursor-pointer"
-              />
-              <FieldDescription>
-                {words.length > 0 ? formatPreview(words) : t("home.uploadWordListHelperEmpty")}
-              </FieldDescription>
-            </Field>
-          </FieldGroup>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-              {t("common.cancel")}
-            </Button>
-            <Button onClick={createCollection} disabled={!newCollectionName.trim() || words.length === 0}>
-              {t("home.createCollectionButton")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
+      <CreateCollectionDialog setCollections={setCollections} showError={showError} showSuccess={showSuccess} t={t} />
       <section className="space-y-4">
         <h2 className="text-sm font-semibold tracking-widest text-muted-foreground uppercase">
           {t("home.collectionsSectionTitle")}
@@ -245,56 +363,20 @@ export default function Page() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2">
             {collections.map((collection) => (
-              <Card key={collection.id} className="group relative gap-2">
-                <CardHeader>
-                  <div className="flex justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                        <FolderOpen className="size-6 text-primary" />
-                      </div>
-                      <div className="min-w-0">
-                        <CardTitle className="truncate text-base">{collection.name}</CardTitle>
-                        <CardDescription className="text-xs">
-                          {new Date(collection.createdAt).toLocaleDateString("en-MY")}
-                        </CardDescription>
-                      </div>
-                    </div>
-                    <Badge variant="secondary" className="h-7 px-2.5">
-                      {collection.translatedWords ? t("home.badgeAudioOnly") : t("home.badgeTranscript")}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="mb-1">
-                  <p>{t("home.collectionCardWordCount", { count: collection.words.length })}</p>
-                  <p className="line-clamp-2 truncate text-sm text-muted-foreground">
-                    {collection.words.slice(0, 3).join(", ")}
-                    {collection.words.length > 3 && "..."}
-                  </p>
-                </CardContent>
-                <CardFooter className="gap-2 border-t">
-                  <Button className="flex-1 gap-2" onClick={() => setSelectedCollection(collection)}>
-                    <Mic className="size-4" />
-                    {t("home.openAndRecord")}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="text-destructive hover:bg-destructive hover:text-white"
-                    onClick={() => {
-                      setCollectionToDelete(collection)
-                      setShowDeleteDialog(true)
-                    }}
-                  >
-                    <Trash2 className="size-4" />
-                  </Button>
-                </CardFooter>
-              </Card>
+              <CollectionCard
+                key={collection.id}
+                collection={collection}
+                onOpen={() => setSelectedCollection(collection)}
+                onDelete={() => setCollectionToDelete(collection)}
+                t={t}
+              />
             ))}
           </div>
         )}
       </section>
-      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+      <AlertDialog open={collectionToDelete !== null} onOpenChange={(open) => !open && setCollectionToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{t("home.deleteCollectionTitle")}</AlertDialogTitle>
@@ -307,7 +389,7 @@ export default function Page() {
                 if (collectionToDelete) {
                   deleteCollection(collectionToDelete.id)
                 }
-                setShowDeleteDialog(false)
+                setCollectionToDelete(null)
               }}
               variant="destructive"
             >
