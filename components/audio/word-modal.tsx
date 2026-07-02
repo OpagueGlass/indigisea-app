@@ -1,10 +1,17 @@
 import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 import { Collection, Timestamp } from "@/lib/db"
 import { formatDuration } from "@/lib/utils"
 import { Check, RotateCcw } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { useState } from "react"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog"
 
 interface WordItemProps {
   word: string
@@ -72,7 +79,6 @@ function WordItem({
         {isMarked ? (
           // Shows a check with a highlighted circle and a retry icon if the word has been marked in the current session
           <div className="flex items-center gap-1">
-
             <span className="flex size-5 items-center justify-center rounded-full border bg-muted text-muted-foreground">
               <RotateCcw className="size-3" />
             </span>

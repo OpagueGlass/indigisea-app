@@ -78,6 +78,7 @@
         "translationPlaceholder": "Masukkan terjemahan...",
         "markStart": "Tandakan Mula",
         "markEnd": "Tandakan Tamat",
+        "markDescription": "Klik 'Tandakan Mula' apabila perkataan disebut dan 'Tandakan Tamat' apabila selesai.",
         "startedAt": "Bermula pada {time}",
         "recordedRange": "Dirakam: {start} - {end}",
         "selectWordToStart": "Pilih perkataan untuk mula menandakan",

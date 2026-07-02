@@ -109,7 +109,7 @@ function CreateCollectionDialog({
         name: name.trim(),
         wordIds: words.map((word) => word.id),
         words: words.map((word) => word.word),
-        wordRecorded: words.map((_) => false),
+        wordRecorded: words.map((_) => false), // Intialise the boolean array to track recorded words
         createdAt: new Date(),
         translatedWords: collectionType === "audio" ? words.map((word) => word.translatedWord!) : null,
       }

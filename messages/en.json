@@ -78,6 +78,7 @@
         "translationPlaceholder": "Enter translation...",
         "markStart": "Mark Start",
         "markEnd": "Mark End",
+        "markDescription": "Click 'Mark Start' when the word is spoken, and 'Mark End' when finished.",
         "startedAt": "Started at {time}",
         "recordedRange": "Recorded: {start} - {end}",
         "selectWordToStart": "Select a word to start marking",

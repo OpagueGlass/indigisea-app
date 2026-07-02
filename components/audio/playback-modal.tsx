@@ -4,24 +4,30 @@ import { formatBytes, formatDuration } from "@/lib/utils"
 import { useTranslations } from "next-intl"
 import { useRef, useState } from "react"
 
+/**
+ * PlaybackModal component provides a modal dialog for playing back a selected audio recording. It displays the
+ * recording's metadata, an audio player with native controls, and a list of word timestamps that can be clicked to
+ * seek to specific points in the recording.
+ */
 export default function PlaybackModal({
+  playbackRecording,
+  recordingUrl,
   isPlaybackModalOpen,
   onClose,
-  playbackRecording,
-  src,
 }: {
+  playbackRecording: Recording | null
+  recordingUrl: string | null | undefined
   isPlaybackModalOpen: boolean
   onClose: () => void
-  playbackRecording: Recording | null
-  src: string | null
 }) {
   const t = useTranslations()
 
   const audioRef = useRef<HTMLAudioElement | null>(null)
-  const [isPlaying, setIsPlaying] = useState(false)
 
+  const [isPlaying, setIsPlaying] = useState(false)
   const [playbackTime, setPlaybackTime] = useState(0)
 
+  // Seek the audio player to a specific timestamp in milliseconds.
   const seekToTimestamp = (timestampMs: number) => {
     if (audioRef.current && playbackRecording) {
       audioRef.current.currentTime = timestampMs / 1000
@@ -32,6 +38,7 @@ export default function PlaybackModal({
     }
   }
 
+  // Reset the playback state and close the modal when the modal is closed.
   const closePlaybackModal = (open: boolean) => {
     if (!open) {
       if (audioRef.current) {
@@ -43,41 +50,42 @@ export default function PlaybackModal({
     }
   }
 
+  // Format the creation date of the recording for display in the modal header.
+  const createdAt =
+    playbackRecording &&
+    new Date(playbackRecording.createdAt)
+      .toLocaleString("en-MY", {
+        hour: "2-digit",
+        minute: "2-digit",
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      })
+      .toLocaleUpperCase()
+
+  // Generate a description for the recording that includes its duration, size, and the number of unique words.
+  const description =
+    playbackRecording &&
+    t("recordings.summaryLine", {
+      duration: formatDuration(playbackRecording.durationMs),
+      size: formatBytes(playbackRecording.size),
+      count: new Set(playbackRecording.timestamps.map((t) => t.wordId)).size,
+    })
+
   return (
     <Dialog open={isPlaybackModalOpen} onOpenChange={(open) => closePlaybackModal(open)}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>
-            {playbackRecording &&
-              new Date(playbackRecording.createdAt)
-                .toLocaleString("en-MY", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                  day: "2-digit",
-                  month: "2-digit",
-                  year: "numeric",
-                })
-                .toLocaleUpperCase()}
-          </DialogTitle>
-          <DialogDescription>
-            {playbackRecording && (
-              <>
-                {t("recordings.summaryLine", {
-                  duration: formatDuration(playbackRecording.durationMs),
-                  size: formatBytes(playbackRecording.size),
-                  count: new Set(playbackRecording.timestamps.map((t) => t.wordId)).size,
-                })}
-              </>
-            )}
-          </DialogDescription>
+          <DialogTitle>{createdAt}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
 
-        {playbackRecording && src && (
+        {playbackRecording && recordingUrl && (
           <div className="space-y-6">
             {/* Audio Player - Native Browser Controls */}
             <audio
               ref={audioRef}
-              src={src}
+              src={recordingUrl}
               controls
               onTimeUpdate={(e) => setPlaybackTime(e.currentTarget.currentTime)}
               onPlay={() => setIsPlaying(true)}
@@ -97,8 +105,10 @@ export default function PlaybackModal({
                 {playbackRecording.timestamps.length === 0 ? (
                   <p className="py-4 text-center text-sm text-muted-foreground">{t("playback.noWordsMarked")}</p>
                 ) : (
+                  // Show the word timestamps as buttons to seek in the audio.
                   <div className="flex flex-wrap gap-2">
                     {playbackRecording.timestamps.map((wt, i) => {
+                      // Set to active if the current playback time is within the timestamp's start and end times.
                       const isActive = playbackTime * 1000 >= wt.startMs && playbackTime * 1000 <= wt.endMs
                       return (
                         <button
@@ -111,9 +121,9 @@ export default function PlaybackModal({
                           }`}
                         >
                           <span className="text-sm font-medium">{wt.word}</span>
-                          {/* {wt.translation && (
+                          {/* {wt.recordedWord && (
                                 <span className={`text-xs ${isActive ? "text-primary-foreground/80" : "text-muted-foreground"}`}>
-                                  {wt.translation}
+                                  {wt.recordedWord}
                                 </span>
                               )} */}
                           <span className={`text-xs ${isActive ? "text-primary-foreground/80" : "text-primary"}`}>

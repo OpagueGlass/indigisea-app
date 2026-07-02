@@ -24,6 +24,7 @@ interface RecorderProps {
   t: ReturnType<typeof useTranslations>
 }
 
+// Preferred MIME types for audio recording in order of preference. The first supported type is used for MediaRecorder.
 const preferredTypes = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4"]
 
 /**
@@ -254,7 +255,6 @@ export function Recorder({
   const markedCount = timestamps.size
   const progress = isRecording ? (markedCount / collection.words.length) * 100 : 0
 
-  // Displays the recorded duration for a specific text, showing the start and end times of the last marked timestamp.
   const recordedDuration = (wordIndex: number) => {
     const pastTimestamps = timestamps.get(wordIndex)!
     const lastTimestamp = pastTimestamps[pastTimestamps.length - 1]
@@ -268,6 +268,41 @@ export function Recorder({
         })}
       </div>
     )
+  }
+
+  const WordRecordingStatus = ({ wordIndex }: { wordIndex: number }) => {
+    if (timestamps.has(wordIndex) && currentWordStartMs === null) {
+      // Displays the recorded duration for the word if it has been marked and the user is not currently marking it.
+      const pastTimestamps = timestamps.get(wordIndex)!
+      const lastTimestamp = pastTimestamps[pastTimestamps.length - 1]
+
+      return (
+        <div className="flex items-center justify-center gap-2 text-center text-sm text-primary">
+          <Check className="size-4" />
+          {t("recorder.recordedRange", {
+            start: formatDuration(lastTimestamp.startMs),
+            end: formatDuration(lastTimestamp.endMs),
+          })}
+        </div>
+      )
+    } else if (currentWordStartMs !== null) {
+      // Displays the current start time for the word if it is being marked and the end time has not been marked yet.
+      return (
+        <div className="flex items-center justify-center gap-2 text-center text-sm text-muted-foreground">
+          <Mic className="size-4" />
+          {t("recorder.startedAt", {
+            time: formatDuration(currentWordStartMs),
+          })}
+        </div>
+      )
+    } else {
+      // Displays a hint to the user on how to mark the start and end times for the word if it has not been marked yet.
+      return (
+        <div className="flex items-center justify-center gap-2 text-center text-sm text-muted-foreground">
+          {t("recorder.markDescription")}
+        </div>
+      )
+    }
   }
 
   // Displays the input field for transcript collections, or the translated word for audio collections based on the
@@ -328,25 +363,16 @@ export function Recorder({
           <div className="justify-center space-y-2 text-center">{recorderWordInput(selectedWordIndex)}</div>
 
           <div className="flex flex-wrap justify-center gap-3">
-            {currentWordStartMs === null ? (
-              <Button size="lg" onClick={markStart} className="min-w-[160px] gap-2">
-                <Play className="size-5" />
-                {t("recorder.markStart")}
-              </Button>
-            ) : (
-              <>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  {t("recorder.startedAt", { time: formatDuration(currentWordStartMs) })}
-                </div>
-                <Button size="lg" onClick={markEnd} className="min-w-[160px] gap-2">
-                  <Square className="size-5" />
-                  {t("recorder.markEnd")}
-                </Button>
-              </>
-            )}
+            <Button
+              size="lg"
+              onClick={currentWordStartMs === null ? markStart : markEnd}
+              className="min-w-[160px] gap-2"
+            >
+              <Play className="size-5" />
+              {currentWordStartMs === null ? t("recorder.markStart") : t("recorder.markEnd")}
+            </Button>
           </div>
-
-          {timestamps.has(selectedWordIndex) && recordedDuration(selectedWordIndex)}
+          <WordRecordingStatus wordIndex={selectedWordIndex} />
         </div>
       )}
 

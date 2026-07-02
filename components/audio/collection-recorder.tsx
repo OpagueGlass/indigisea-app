@@ -1,12 +1,12 @@
 "use client"
 
+import { Player } from "@/components/audio/player"
 import { Recorder } from "@/components/audio/recorder"
 import { Button } from "@/components/ui/button"
 import { Collection, Recording, getRecordings } from "@/lib/db"
 import { ArrowLeft } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { useEffect, useRef, useState } from "react"
-import { Player } from "./player"
 
 interface CollectionRecorderProps {
   collection: Collection
