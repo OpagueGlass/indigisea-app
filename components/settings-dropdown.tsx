@@ -15,11 +15,15 @@ import { Check, Languages, Monitor, Moon, Settings, Sun } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { useTheme } from "next-themes"
 
+/**
+ * Settings Dropdown component provides a dropdown menu for changing the application's theme and language settings.
+ */
 export function SettingsDropdown() {
   const t = useTranslations()
   const { theme, setTheme } = useTheme()
   const { locale, setLocale } = useAppLocale()
 
+  // Available themes and languages for the settings dropdown, with their respective labels and icons.
   const themes = [
     { value: "light", label: t("settings.light"), icon: Sun },
     { value: "dark", label: t("settings.dark"), icon: Moon },

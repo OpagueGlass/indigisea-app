@@ -16,10 +16,12 @@ type LocaleContextValue = {
 
 const LocaleContext = createContext<LocaleContextValue | null>(null)
 
+// Check if a given value is a supported locale.
 function isSupportedLocale(value: unknown): value is SupportedLocale {
 	return supportedLocales.includes(value as SupportedLocale)
 }
 
+// Read the preferred locale from localStorage, falling back to a default if not found or invalid.
 function readPreferredLocale(fallback: SupportedLocale): SupportedLocale {
 	try {
 		const stored = localStorage.getItem("locale")
@@ -31,10 +33,14 @@ function readPreferredLocale(fallback: SupportedLocale): SupportedLocale {
 	return fallback
 }
 
+// Get the appropriate messages for the given locale.
 function getMessages(locale: SupportedLocale) {
 	return locale === "ms" ? msMessages : enMessages
 }
 
+/**
+ * I18nProvider component provides internationalisation support for the application for switching between languages.
+ */
 export function I18nProvider({
 	children,
 	initialLocale,
@@ -43,15 +49,17 @@ export function I18nProvider({
 	initialLocale: SupportedLocale
 }) {
 	const [locale, setLocale] = useState<SupportedLocale>(initialLocale)
-	const didInitRef = useRef(false)
+	const hasInitialised = useRef(false)
 
 	useEffect(() => {
-		if (didInitRef.current) return
-		didInitRef.current = true
+		// Set the initial locale from localStorage only once on mount.
+		if (hasInitialised.current) return
+		hasInitialised.current = true
 		setLocale(readPreferredLocale(initialLocale))
 	}, [initialLocale])
 
 	useEffect(() => {
+		// Update localStorage whenever the locale changes.
 		try {
 			localStorage.setItem("locale", locale)
 		} catch (e) {

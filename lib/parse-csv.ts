@@ -25,14 +25,14 @@ export const collectionTypes = [
 export type CollectionTypeValue = (typeof collectionTypes)[number]["value"]
 
 /**
- * Updates the result of parsing a CSV file, handling errors and setting the parsed text into state based on the 
- * specified collection type. 
- * 
+ * Updates the result of parsing a CSV file, handling errors and setting the parsed text into state based on the
+ * specified collection type.
+ *
  * Note that the CSV format is based on the order of the columns and not the column names, where:
  * - The first column is the id
  * - The second column is the text (word/sentence) in the national language
  * - The third column (if present) is the translated text in the native language.
- * 
+ *
  * @param file The CSV file to be parsed.
  * @param collectionType The type of collection being created, either "transcript" or "audio".
  * @param setWords A callback function to set the parsed texts (words/sentences) into state.
@@ -96,7 +96,8 @@ function updateResult(
         const words = validRows.map(parseAudioRow)
         setWords(words)
       } else if (collectionType === "transcript") {
-        // Check if the transcript collection has at least 2 columns (id, word) and parse the valid rows into Word objects.
+        // Check if the transcript collection has at least 2 columns (id, word) and parse the valid rows into
+        // Word objects.
         if (headers.length < 2) {
           onError("csv.needs2ColumnsTranscript", { fileName: file.name })
           return
