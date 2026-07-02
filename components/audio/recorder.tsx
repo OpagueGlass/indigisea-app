@@ -255,18 +255,34 @@ export function Recorder({
   const markedCount = timestamps.size
   const progress = isRecording ? (markedCount / collection.words.length) * 100 : 0
 
-  const recordedDuration = (wordIndex: number) => {
-    const pastTimestamps = timestamps.get(wordIndex)!
-    const lastTimestamp = pastTimestamps[pastTimestamps.length - 1]
+  // Displays the input field for transcript collections, or the translated word for audio collections based on the
+  // selected text index.
+  const RecorderWordInput = ({ selectedWordIndex }: { selectedWordIndex: number }) => {
+    if (collection.translatedWords) {
+      // Audio types will use the translated word
+      const originalTranslation = collection.translatedWords[selectedWordIndex]
+      return (
+        <>
+          <p className="mb-2 text-sm text-muted-foreground">{t("recorder.translatedWordLabel")}</p>
+          <p className="text-3xl font-bold text-foreground">{originalTranslation}</p>
+        </>
+      )
+    }
 
+    // Only allow input for transcript collections
     return (
-      <div className="flex items-center justify-center gap-2 text-center text-sm text-primary">
-        <Check className="size-4" />
-        {t("recorder.recordedRange", {
-          start: formatDuration(lastTimestamp.startMs),
-          end: formatDuration(lastTimestamp.endMs),
-        })}
-      </div>
+      <>
+        <Label htmlFor="translation" className="text-sm">
+          {t("recorder.translationLabel")}
+        </Label>
+        <Input
+          id="translation"
+          placeholder={t("recorder.translationPlaceholder")}
+          value={recordedWord}
+          onChange={(e) => setRecordedWord(e.target.value)}
+          disabled={wordEndMarked}
+        />
+      </>
     )
   }
 
@@ -305,39 +321,6 @@ export function Recorder({
     }
   }
 
-  // Displays the input field for transcript collections, or the translated word for audio collections based on the
-  // selected text index.
-  const recorderWordInput = (selectedWordIndex: number | null) => {
-    if (selectedWordIndex === null) return null
-
-    if (collection.translatedWords) {
-      // Audio types will use the translated word
-      const originalTranslation = collection.translatedWords[selectedWordIndex]
-      return (
-        <>
-          <p className="mb-2 text-sm text-muted-foreground">{t("recorder.translatedWordLabel")}</p>
-          <p className="text-3xl font-bold text-foreground">{originalTranslation}</p>
-        </>
-      )
-    }
-
-    // Only allow input for transcript collections
-    return (
-      <>
-        <Label htmlFor="translation" className="text-sm">
-          {t("recorder.translationLabel")}
-        </Label>
-        <Input
-          id="translation"
-          placeholder={t("recorder.translationPlaceholder")}
-          value={recordedWord}
-          onChange={(e) => setRecordedWord(e.target.value)}
-          disabled={wordEndMarked}
-        />
-      </>
-    )
-  }
-
   // Displays the recording interface, including progress, current text controls, and the word selection modal.
   const recording = (
     <>
@@ -359,9 +342,9 @@ export function Recorder({
             <p className="mb-2 text-sm text-muted-foreground">{t("recorder.selectedWordLabel")}</p>
             <p className="text-3xl font-bold text-foreground">{collection.words[selectedWordIndex]}</p>
           </div>
-
-          <div className="justify-center space-y-2 text-center">{recorderWordInput(selectedWordIndex)}</div>
-
+          <div className="justify-center space-y-2 text-center">
+            <RecorderWordInput selectedWordIndex={selectedWordIndex} />
+          </div>
           <div className="flex flex-wrap justify-center gap-3">
             <Button
               size="lg"
