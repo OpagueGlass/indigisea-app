@@ -257,7 +257,7 @@ export function Recorder({
 
   // Displays the input field for transcript collections, or the translated word for audio collections based on the
   // selected text index.
-  const RecorderWordInput = ({ selectedWordIndex }: { selectedWordIndex: number }) => {
+  const recorderWordInput = (selectedWordIndex: number) => {
     if (collection.translatedWords) {
       // Audio types will use the translated word
       const originalTranslation = collection.translatedWords[selectedWordIndex]
@@ -343,7 +343,7 @@ export function Recorder({
             <p className="text-3xl font-bold text-foreground">{collection.words[selectedWordIndex]}</p>
           </div>
           <div className="justify-center space-y-2 text-center">
-            <RecorderWordInput selectedWordIndex={selectedWordIndex} />
+            {recorderWordInput(selectedWordIndex)}
           </div>
           <div className="flex flex-wrap justify-center gap-3">
             <Button
