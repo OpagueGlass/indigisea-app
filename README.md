@@ -1,21 +1,17 @@
-# Next.js template
+# IndigiSEA Recorder Application
 
-This is a Next.js template with shadcn/ui.
+An offline-first Progressive Web Application using Next.js and Serwist to enable reliable transcription of critically endangered Indigenous languages, including Temuan, in remote communities with limited internet access.
 
-## Adding components
+## Getting Started
+First, install dependencies
+```bash
+npm install
+```
 
-To add components to your app, run the following command:
+Run the development server:
 
 ```bash
-npx shadcn@latest add button
+npm run dev
 ```
 
-This will place the ui components in the `components` directory.
-
-## Using components
-
-To use the components in your app, import them as follows:
-
-```tsx
-import { Button } from "@/components/ui/button";
-```
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
