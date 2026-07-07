@@ -3,15 +3,16 @@
 An offline-first Progressive Web Application using Next.js and Serwist to enable reliable transcription of critically endangered Indigenous languages, including Temuan, in remote communities with limited internet access.
 
 ## Getting Started
-First, install dependencies
-```bash
-npm install
-```
+1. Install Dependencies:
 
-Run the development server:
+    ```bash
+    npm install
+    ```
 
-```bash
-npm run dev
-```
+2. Start the Development Server
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+    ```bash
+    npm run dev
+    ```
+3. Open [http://localhost:3000](http://localhost:3000) with your browser to see the app.
+
